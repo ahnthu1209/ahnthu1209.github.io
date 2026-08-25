@@ -1,0 +1,44 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build
+_site/
+dist/
+.cache/
+
+# Environment
+.env
+.env.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Large files - NOT pushed (kept locally only)
+*.pdf
+*.mp4
+*.mov
+*.avi
+*.zip
+*.rar
+
+# Backup
+*.bak
+*.tmp
+*~
+
+# Source CV file (keep in repo)
+Prompt.txt
