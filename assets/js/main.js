@@ -46,6 +46,7 @@
     { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }
   );
   revealEls.forEach((el) => revealObserver.observe(el));
+  window.PAT_REVEAL_OBSERVER = revealObserver;
 
   // -------- Counter animation --------
   const counters = document.querySelectorAll('[data-counter]');
@@ -81,15 +82,21 @@
   const lightboxImg = document.getElementById('lightbox-img');
   const lightboxClose = document.getElementById('lightbox-close');
 
+  function openLightbox(src) {
+    if (!lightbox || !lightboxImg) return;
+    lightboxImg.src = src;
+    lightbox.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  window.PAT_LIGHTBOX_OPEN = openLightbox;
+
   if (lightbox && lightboxImg) {
     document.querySelectorAll('[data-lightbox]').forEach((item) => {
       item.addEventListener('click', (e) => {
         e.preventDefault();
         const src = item.getAttribute('data-lightbox') || item.getAttribute('href');
         if (!src) return;
-        lightboxImg.src = src;
-        lightbox.classList.add('active');
-        document.body.style.overflow = 'hidden';
+        openLightbox(src);
       });
     });
 
@@ -108,22 +115,7 @@
     });
   }
 
-  // -------- Concept tabs --------
-  document.querySelectorAll('.concept-tabs').forEach((tabGroup) => {
-    const tabs = tabGroup.querySelectorAll('.concept-tab');
-    const gallery = tabGroup.nextElementSibling;
-    if (!gallery) return;
-    tabs.forEach((tab) => {
-      tab.addEventListener('click', () => {
-        tabs.forEach((t) => t.classList.remove('active'));
-        tab.classList.add('active');
-        const target = tab.getAttribute('data-target');
-        gallery.querySelectorAll('.concept-pane').forEach((pane) => {
-          pane.style.display = pane.getAttribute('data-pane') === target ? 'grid' : 'none';
-        });
-      });
-    });
-  });
+  // -------- Concept tabs (handled by i18n-render.js, no need to re-bind here) --------
 
   // -------- Mobile nav toggle --------
   const mobileToggle = document.querySelector('.nav-mobile-toggle');

@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#FF6B6B" />
   <title>Phùng Anh Thư — Marketing Executive | Real Estate Portfolio</title>
+  <meta name="theme-color" content="#FF6B6B" />
   <meta name="description" content="Portfolio của Phùng Anh Thư — Marketing Executive với 2+ năm kinh nghiệm triển khai Marketing cho 15+ dự án bất động sản. Chuyên về IMC Planning, Concept Development và Event Coordination." />
   <meta name="author" content="Phùng Anh Thư" />
   <meta property="og:title" content="Phùng Anh Thư — Marketing Executive" />
@@ -25,31 +25,36 @@
 
 <!-- ====== NAVIGATION ====== -->
 <nav class="nav-bar">
-  <a href="#hero" class="nav-logo">Phùng Anh Thư</a>
+  <a href="#hero" class="nav-logo" data-i18n="nav.home">Phùng Anh Thư</a>
   <ul class="nav-links">
-    <li><a href="#about">Giới thiệu</a></li>
-    <li><a href="#experience">Kinh nghiệm</a></li>
-    <li><a href="#planning">Marketing Planning</a></li>
-    <li><a href="#projects">Dự án</a></li>
-    <li><a href="#contact">Liên hệ</a></li>
+    <li><a href="#about" data-i18n="nav.about">Giới thiệu</a></li>
+    <li><a href="#experience" data-i18n="nav.experience">Kinh nghiệm</a></li>
+    <li><a href="#planning" data-i18n="nav.planning">Marketing Planning</a></li>
+    <li><a href="#projects" data-i18n="nav.projects">Dự án</a></li>
+    <li><a href="#contact" data-i18n="nav.contact">Liên hệ</a></li>
   </ul>
-  <button class="nav-mobile-toggle" aria-label="Menu">☰</button>
+  <div class="nav-right">
+    <button class="lang-toggle" type="button" data-lang="en" aria-label="Switch to English">
+      <span class="lang-toggle-label">EN</span>
+    </button>
+    <button class="nav-mobile-toggle" aria-label="Menu">☰</button>
+  </div>
 </nav>
 
 <!-- ====== HERO ====== -->
 <header id="hero" class="hero">
   <div class="hero-grid">
     <div class="hero-content">
-      <div class="hero-eyebrow">Marketing Executive — Real Estate</div>
+      <div class="hero-eyebrow" data-i18n="hero.eyebrow">Marketing Executive — Real Estate</div>
       <h1 class="hero-title">
         Phùng<br/>
-        <span class="accent">Anh Thư</span>
+        <span class="accent" data-i18n="hero.titleAccent">Anh Thư</span>
       </h1>
-      <p class="hero-subtitle">
+      <p class="hero-subtitle" data-i18n="hero.subtitle">
         2+ năm kinh nghiệm triển khai Marketing xuyên suốt vòng đời dự án bất động sản — từ Concept, IMC Planning đến phối hợp sản xuất và đánh giá hiệu quả.
       </p>
       <a href="#planning" class="hero-cta">
-        Khám phá portfolio
+        <span data-i18n="hero.cta">Khám phá portfolio</span>
         <span class="hero-cta-arrow">→</span>
       </a>
     </div>
@@ -60,55 +65,39 @@
           <img src="assets/images/avatar.jpg" alt="Phùng Anh Thư" />
         </div>
         <div class="hero-badge top">
-          <span class="dot"></span> Đang mở cơ hội mới
+          <span class="dot"></span> <span data-i18n="hero.badgeOpen">Đang mở cơ hội mới</span>
         </div>
-        <div class="hero-badge bottom">
+        <div class="hero-badge bottom" data-i18n="hero.badgeRole">
           IFTV · Marketing Project Leader
         </div>
       </div>
     </div>
   </div>
 
-  <div class="hero-marquee">
-    <div class="hero-marquee-track">
-      <span>IMC Planning</span>
-      <span>Concept Development</span>
-      <span>Market Research</span>
-      <span>Content Creation</span>
-      <span>Event Coordination</span>
-      <span>Full-stack Marketing</span>
-      <span>Real Estate Marketing</span>
-      <span>IMC Planning</span>
-      <span>Concept Development</span>
-      <span>Market Research</span>
-      <span>Content Creation</span>
-      <span>Event Coordination</span>
-      <span>Full-stack Marketing</span>
-      <span>Real Estate Marketing</span>
-    </div>
-  </div>
+  <div class="hero-marquee" id="hero-marquee"></div>
 </header>
 
 <!-- ====== ABOUT ====== -->
 <section id="about" class="section about">
   <div class="about-grid">
     <div>
-      <div class="section-eyebrow reveal">Giới thiệu</div>
+      <div class="section-eyebrow reveal" data-i18n="about.eyebrow">Giới thiệu</div>
       <h2 class="section-title reveal">
-        Đam mê Marketing<br/>
-        <span class="italic">từ ý tưởng đến</span> thực thi.
+        <span data-i18n="about.title1">Đam mê Marketing</span><br/>
+        <span class="italic" data-i18n="about.title2">từ ý tưởng đến</span> <span data-i18n="about.title3">thực thi.</span>
       </h2>
     </div>
     <div class="about-text reveal">
-      <span class="highlight">Về bản thân</span>
-      <p>
+      <span class="highlight" data-i18n="about.highlight">Về bản thân</span>
+      <p data-i18n="about.p1">
         Tôi có kinh nghiệm tham gia xuyên suốt quá trình triển khai Marketing dự án bất động sản, từ phát triển concept, xây dựng nội dung, lập kế hoạch truyền thông đến phối hợp sản xuất và làm việc với các bên liên quan.
       </p>
-      <p>
+      <p data-i18n="about.p2">
         Kinh nghiệm đa nhiệm giúp tôi nắm bắt dự án nhanh, kết nối các đầu việc và bảo đảm quá trình triển khai bám sát định hướng, tiến độ và mục tiêu kinh doanh.
       </p>
       <p>
-        Trong giai đoạn tiếp theo, tôi muốn phát triển từ năng lực thực thi sang <strong>hoạch định và quản lý tổng thể</strong>, từng bước chủ động phụ trách dự án và chịu trách nhiệm rõ hơn về hiệu quả cuối cùng.
+        <span data-i18n="about.p3">Trong giai đoạn tiếp theo, tôi muốn phát triển từ năng lực thực thi sang</span>
+        <strong data-i18n="about.p3Strong">hoạch định và quản lý tổng thể</strong><span data-i18n="about.p3End">, từng bước chủ động phụ trách dự án và chịu trách nhiệm rõ hơn về hiệu quả cuối cùng.</span>
       </p>
     </div>
   </div>
@@ -116,19 +105,19 @@
   <div class="stats-grid reveal">
     <div class="stat-card">
       <div class="stat-number"><span data-counter="15" data-suffix="+">0</span></div>
-      <div class="stat-label">Dự án bất động sản đã tham gia</div>
+      <div class="stat-label" data-i18n="about.stats.projects">Dự án bất động sản đã tham gia</div>
     </div>
     <div class="stat-card">
       <div class="stat-number"><span data-counter="2" data-suffix="+">0</span></div>
-      <div class="stat-label">Năm kinh nghiệm Marketing BĐS</div>
+      <div class="stat-label" data-i18n="about.stats.years">Năm kinh nghiệm Marketing BĐS</div>
     </div>
     <div class="stat-card">
       <div class="stat-number"><span data-counter="3.7" data-decimals="1" data-suffix="/4.0">0</span></div>
-      <div class="stat-label">GPA chuyên ngành Business & Marketing</div>
+      <div class="stat-label" data-i18n="about.stats.gpa">GPA chuyên ngành Business & Marketing</div>
     </div>
     <div class="stat-card">
       <div class="stat-number"><span data-counter="360" data-suffix="°">0</span></div>
-      <div class="stat-label">Full-stack Marketing</div>
+      <div class="stat-label" data-i18n="about.stats.fullstack">Full-stack Marketing</div>
     </div>
   </div>
 </section>
@@ -136,69 +125,38 @@
 <!-- ====== SKILLS ====== -->
 <section class="section skills">
   <div class="section-header">
-    <div class="section-eyebrow reveal">Năng lực</div>
+    <div class="section-eyebrow reveal" data-i18n="skills.eyebrow">Năng lực</div>
     <h2 class="section-title reveal">
-      Kỹ năng <span class="italic">cốt lõi.</span>
+      <span data-i18n="skills.title1">Kỹ năng </span><span class="italic" data-i18n="skills.title2">cốt lõi.</span>
     </h2>
-    <p class="section-description reveal" style="color: var(--cream); opacity: 0.8;">
+    <p class="section-description reveal" style="color: var(--cream); opacity: 0.8;" data-i18n="skills.desc">
       Bộ kỹ năng toàn diện cho phép tôi kết nối chiến lược với thực thi trên nhiều kênh truyền thông.
     </p>
   </div>
 
-  <div class="skills-grid">
-    <div class="skill-card reveal">
-      <div class="skill-icon">01</div>
-      <div class="skill-name">Marketing Planning</div>
-      <p class="skill-desc">Lập kế hoạch Marketing tổng thể, theo dõi tiến độ, ngân sách và đánh giá hiệu quả.</p>
-    </div>
-    <div class="skill-card reveal">
-      <div class="skill-icon">02</div>
-      <div class="skill-name">IMC Planning</div>
-      <p class="skill-desc">Xây dựng kế hoạch truyền thông tích hợp đa kênh, đồng bộ key message với mục tiêu kinh doanh.</p>
-    </div>
-    <div class="skill-card reveal">
-      <div class="skill-icon">03</div>
-      <div class="skill-name">Market Research</div>
-      <p class="skill-desc">Nghiên cứu thị trường, đối thủ, khách hàng mục tiêu và xu hướng truyền thông.</p>
-    </div>
-    <div class="skill-card reveal">
-      <div class="skill-icon">04</div>
-      <div class="skill-name">Concept Development</div>
-      <p class="skill-desc">Phát triển Big Idea, câu chuyện truyền thông, slogan, key visual và key selling point.</p>
-    </div>
-    <div class="skill-card reveal">
-      <div class="skill-icon">05</div>
-      <div class="skill-name">Content Creation</div>
-      <p class="skill-desc">Viết content, thiết kế hình ảnh, biên tập video phục vụ digital ads, social media và landing page.</p>
-    </div>
-    <div class="skill-card reveal">
-      <div class="skill-icon">06</div>
-      <div class="skill-name">Event Coordination</div>
-      <p class="skill-desc">Lead sự kiện từ proposal, checklist, kịch bản, MC script đến phối hợp nhà thầu và giám sát thực thi.</p>
-    </div>
-  </div>
+  <div class="skills-grid" id="skills-grid"></div>
 </section>
 
 <!-- ====== EDUCATION ====== -->
 <section class="section education">
   <div class="section-header">
-    <div class="section-eyebrow reveal">Học vấn</div>
+    <div class="section-eyebrow reveal" data-i18n="education.eyebrow">Học vấn</div>
     <h2 class="section-title reveal">
-      Nền tảng <span class="italic">học thuật.</span>
+      <span data-i18n="education.title1">Nền tảng </span><span class="italic" data-i18n="education.title2">học thuật.</span>
     </h2>
   </div>
 
   <div class="edu-card reveal">
-    <div class="edu-year">2019 — 2023</div>
+    <div class="edu-year" data-i18n="education.year">2019 — 2023</div>
     <div class="edu-content">
-      <h3>Cử nhân Quốc tế</h3>
-      <p class="degree">Business and Marketing</p>
-      <p class="school">IBD@NEU — Conventry University</p>
+      <h3 data-i18n="education.degree">Cử nhân Quốc tế</h3>
+      <p class="degree" data-i18n="education.major">Business and Marketing</p>
+      <p class="school" data-i18n="education.school">IBD@NEU — Conventry University</p>
     </div>
     <div class="edu-highlights">
-      <span class="edu-tag gold">Bằng Xuất Sắc</span>
-      <span class="edu-tag">GPA 3.7 / 4.0</span>
-      <span class="edu-tag" style="background: var(--charcoal);">Học bổng KKHT 2021</span>
+      <span class="edu-tag gold" data-i18n="education.tags.honor">Bằng Xuất Sắc</span>
+      <span class="edu-tag" data-i18n="education.tags.gpa">GPA 3.7 / 4.0</span>
+      <span class="edu-tag" style="background: var(--charcoal);" data-i18n="education.tags.scholarship">Học bổng KKHT 2021</span>
     </div>
   </div>
 </section>
@@ -206,121 +164,33 @@
 <!-- ====== EXPERIENCE ====== -->
 <section id="experience" class="section experience">
   <div class="section-header">
-    <div class="section-eyebrow reveal">Kinh nghiệm</div>
+    <div class="section-eyebrow reveal" data-i18n="experience.eyebrow">Kinh nghiệm</div>
     <h2 class="section-title reveal">
-      Hành trình <span class="italic">làm nghề.</span>
+      <span data-i18n="experience.title1">Hành trình </span><span class="italic" data-i18n="experience.title2">làm nghề.</span>
     </h2>
-    <p class="section-description reveal">
+    <p class="section-description reveal" data-i18n="experience.desc">
       Hơn 2 năm làm việc thực chiến tại các công ty truyền thông và chủ đầu tư bất động sản, đảm nhận vai trò từ triển khai đến điều phối dự án.
     </p>
   </div>
 
-  <div class="timeline">
-    <div class="timeline-item current reveal">
-      <div class="timeline-dot"></div>
-      <div class="exp-card">
-        <div class="exp-header">
-          <div>
-            <div class="exp-role">Marketing Project Leader</div>
-            <div class="exp-company">Công ty Truyền thông kỹ thuật số IFTV</div>
-          </div>
-          <div class="exp-date">03/2026 — Hiện tại</div>
-        </div>
-        <ul class="exp-list">
-          <li>Trực tiếp điều phối và triển khai các hoạt động Marketing trong toàn bộ vòng đời dự án.</li>
-          <li>Nghiên cứu thị trường, phân tích đối thủ, khách hàng mục tiêu và đề xuất định hướng Concept và kế hoạch truyền thông cho từng giai đoạn.</li>
-          <li>Lập kế hoạch IMC, đề xuất hạng mục triển khai, theo dõi tiến độ và phối hợp kiểm soát ngân sách marketing.</li>
-          <li>Sản xuất ấn phẩm bán hàng và triển khai các kênh: website, landing page, visual dự án, OOH, livestream, social media, PR.</li>
-          <li>Trực tiếp làm việc với agency, nhà cung cấp và các đơn vị liên quan để triển khai các hạng mục, đảm bảo đúng tiến độ, định hướng và hiệu quả thực thi.</li>
-          <li>Theo dõi, tổng hợp và đánh giá hiệu quả các hoạt động marketing; chủ động đề xuất điều chỉnh để tối ưu hiệu quả truyền thông.</li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="timeline-item reveal">
-      <div class="timeline-dot"></div>
-      <div class="exp-card">
-        <div class="exp-header">
-          <div>
-            <div class="exp-role">Chuyên viên Marketing</div>
-            <div class="exp-company">Công ty Cổ phần Bất động sản BHS</div>
-          </div>
-          <div class="exp-date">07/2024 — 03/2026</div>
-        </div>
-        <ul class="exp-list">
-          <li>Tổng hợp thông tin thị trường, đối thủ và khách hàng để đề xuất hướng truyền thông phù hợp cho từng dự án.</li>
-          <li>Tham gia xây dựng và triển khai kế hoạch IMC; theo dõi tiến độ, ngân sách các hạng mục được giao.</li>
-          <li>Phụ trách ấn phẩm bán hàng và nội dung trên website, landing page, OOH, social media, PR, livestream.</li>
-          <li>Phối hợp với agency, nhà cung cấp và các bộ phận liên quan để đảm bảo tiến độ, chất lượng triển khai.</li>
-          <li>Hỗ trợ bộ phận Kinh doanh chuẩn bị tài liệu và triển khai các hoạt động ra mắt, mở bán dự án.</li>
-          <li>Theo dõi kết quả truyền thông, tổng hợp báo cáo và đề xuất điều chỉnh.</li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="timeline-item reveal">
-      <div class="timeline-dot"></div>
-      <div class="exp-card">
-        <div class="exp-header">
-          <div>
-            <div class="exp-role">Social Media Marketing</div>
-            <div class="exp-company">Cheers Hostel &amp; Tours</div>
-          </div>
-          <div class="exp-date">08/2023 — 07/2024</div>
-        </div>
-        <ul class="exp-list">
-          <li>Lập kế hoạch, triển khai chiến lược Marketing phù hợp với thị hiếu và hành vi khách hàng.</li>
-          <li>Viết content, thiết kế hình ảnh, biên tập video, kết hợp với team media để tạo các sản phẩm có tính tương tác cao, đảm bảo tính nhất quán trên tất cả các nền tảng.</li>
-          <li>Theo dõi hiệu suất chiến dịch, phân tích số liệu và insight người dùng để tối ưu content, tăng mức độ tương tác và chuyển đổi.</li>
-          <li>Lên ý tưởng và sản xuất các ấn phẩm in ấn phục vụ hoạt động quảng bá, sự kiện và thương hiệu công ty.</li>
-          <li>Cập nhật liên tục các xu hướng Social Media, phân tích đối thủ để đề xuất chiến lược phù hợp.</li>
-        </ul>
-      </div>
-    </div>
-  </div>
+  <div class="timeline" id="experience-timeline"></div>
 </section>
 
 <!-- ====== MARKETING PLANNING ====== -->
 <section id="planning" class="section planning">
   <div class="section-header">
-    <div class="section-eyebrow reveal">Quy trình</div>
+    <div class="section-eyebrow reveal" data-i18n="planning.eyebrow">Quy trình</div>
     <h2 class="section-title reveal">
-      Marketing Planning<br/>
-      <span class="italic">xuyên suốt dự án.</span>
+      <span data-i18n="planning.title1">Marketing Planning</span><br/>
+      <span class="italic" data-i18n="planning.title2">xuyên suốt dự án.</span>
     </h2>
-    <p class="section-description reveal">
+    <p class="section-description reveal" data-i18n="planning.desc">
       Kinh nghiệm hoạch định Marketing cho danh mục bất động sản đa dạng về loại hình và phân khúc: từ thấp tầng, cao tầng, khu công nghiệp, nhà ở xã hội đến các dự án hạng sang theo tiêu chuẩn quốc tế.
     </p>
   </div>
 
   <!-- 5-step workflow -->
-  <div class="process-grid">
-    <div class="process-step reveal">
-      <div class="step-number">01</div>
-      <div class="step-title">Nghiên cứu thị trường &amp; đối thủ</div>
-      <p class="step-desc">Tổng hợp dữ liệu, phân tích đối thủ, khách hàng mục tiêu và xu hướng.</p>
-    </div>
-    <div class="process-step reveal">
-      <div class="step-number">02</div>
-      <div class="step-title">Xây dựng Concept</div>
-      <p class="step-desc">Big Idea · Câu chuyện · Định vị · Slogan · Key Visual · KSP.</p>
-    </div>
-    <div class="process-step reveal">
-      <div class="step-number">03</div>
-      <div class="step-title">Kế hoạch truyền thông</div>
-      <p class="step-desc">Key message · Key activities · Timeline bám sát mục tiêu kinh doanh.</p>
-    </div>
-    <div class="process-step reveal">
-      <div class="step-number">04</div>
-      <div class="step-title">Triển khai</div>
-      <p class="step-desc">Tài liệu bán hàng, clip, creative content, PR, OOH, event và các kênh khác.</p>
-    </div>
-    <div class="process-step reveal">
-      <div class="step-number">05</div>
-      <div class="step-title">Theo dõi &amp; báo cáo</div>
-      <p class="step-desc">Đánh giá hiệu quả, đề xuất điều chỉnh phù hợp thị trường.</p>
-    </div>
-  </div>
+  <div class="process-grid" id="process-grid"></div>
 
   <!-- Process detail gallery -->
   <div class="process-detail">
@@ -329,23 +199,23 @@
     <div class="process-subsection">
       <div class="process-subsection-header reveal">
         <div class="process-subsection-num">01</div>
-        <div class="process-subsection-title">Nghiên cứu thị trường &amp; đối thủ</div>
-        <div class="process-subsection-note">Market Research</div>
+        <div class="process-subsection-title" data-i18n="planning.subsections.research.title">Nghiên cứu thị trường &amp; đối thủ</div>
+        <div class="process-subsection-note" data-i18n="planning.subsections.research.note">Market Research</div>
       </div>
       <div class="image-grid reveal">
-        <a href="assets/portfolio/1-nghien-cuu/001.png" data-lightbox="assets/portfolio/1-nghien-cuu/001.png" class="image-grid-item">
+        <a href="assets/portfolio/1-nghien-cuu/001.png" data-lightbox class="image-grid-item">
           <img src="assets/portfolio/1-nghien-cuu/001.png" alt="Nghiên cứu thị trường" loading="lazy" />
         </a>
-        <a href="assets/portfolio/1-nghien-cuu/002.png" data-lightbox="assets/portfolio/1-nghien-cuu/002.png" class="image-grid-item">
+        <a href="assets/portfolio/1-nghien-cuu/002.png" data-lightbox class="image-grid-item">
           <img src="assets/portfolio/1-nghien-cuu/002.png" alt="Phân tích đối thủ" loading="lazy" />
         </a>
-        <a href="assets/portfolio/1-nghien-cuu/003.png" data-lightbox="assets/portfolio/1-nghien-cuu/003.png" class="image-grid-item">
+        <a href="assets/portfolio/1-nghien-cuu/003.png" data-lightbox class="image-grid-item">
           <img src="assets/portfolio/1-nghien-cuu/003.png" alt="CEO meeting - Lumera City" loading="lazy" />
         </a>
-        <a href="assets/portfolio/1-nghien-cuu/004.png" data-lightbox="assets/portfolio/1-nghien-cuu/004.png" class="image-grid-item">
+        <a href="assets/portfolio/1-nghien-cuu/004.png" data-lightbox class="image-grid-item">
           <img src="assets/portfolio/1-nghien-cuu/004.png" alt="Key Visual Gold Coast" loading="lazy" />
         </a>
-        <a href="assets/portfolio/1-nghien-cuu/005.png" data-lightbox="assets/portfolio/1-nghien-cuu/005.png" class="image-grid-item">
+        <a href="assets/portfolio/1-nghien-cuu/005.png" data-lightbox class="image-grid-item">
           <img src="assets/portfolio/1-nghien-cuu/005.png" alt="Insight khách hàng" loading="lazy" />
         </a>
       </div>
@@ -355,18 +225,11 @@
     <div class="process-subsection">
       <div class="process-subsection-header reveal">
         <div class="process-subsection-num">02</div>
-        <div class="process-subsection-title">Xây dựng Concept</div>
-        <div class="process-subsection-note">Big Idea · Slogan · Key Visual</div>
+        <div class="process-subsection-title" data-i18n="planning.subsections.concept.title">Xây dựng Concept</div>
+        <div class="process-subsection-note" data-i18n="planning.subsections.concept.note">Big Idea · Slogan · Key Visual</div>
       </div>
 
-      <div class="concept-tabs reveal">
-        <button class="concept-tab active" data-target="andora-city">Andora City</button>
-        <button class="concept-tab" data-target="anmaison">ANmaison</button>
-        <button class="concept-tab" data-target="gold-coast-vung-tau">Gold Coast Vũng Tàu</button>
-        <button class="concept-tab" data-target="parc-ville">Parc Ville</button>
-        <button class="concept-tab" data-target="the-poet-residences">The Poet Residences</button>
-        <button class="concept-tab" data-target="tan-phu-hung">Tân Phú Hưng</button>
-      </div>
+      <div class="concept-tabs reveal" id="concept-tabs"></div>
 
       <div class="concept-gallery reveal">
         <div class="concept-pane" data-pane="andora-city" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem;">
@@ -436,8 +299,8 @@
     <div class="process-subsection">
       <div class="process-subsection-header reveal">
         <div class="process-subsection-num">03</div>
-        <div class="process-subsection-title">Timeline &amp; Kế hoạch Marketing</div>
-        <div class="process-subsection-note">IMC Plan</div>
+        <div class="process-subsection-title" data-i18n="planning.subsections.timeline.title">Timeline &amp; Kế hoạch Marketing</div>
+        <div class="process-subsection-note" data-i18n="planning.subsections.timeline.note">IMC Plan</div>
       </div>
       <div class="image-grid reveal">
         <a href="assets/portfolio/3-timeline/001.jpg" data-lightbox class="image-grid-item">
@@ -452,27 +315,14 @@
     <!-- 04 Triển khai: Tài liệu bán hàng -->
     <div class="process-subsection">
       <div class="process-subsection-header reveal">
-        <div class="process-subsection-num">04 · Tài liệu bán hàng</div>
-        <div class="process-subsection-title">Ấn phẩm bán hàng</div>
-        <div class="process-subsection-note">Brochure · Tờ gập · Bản đồ</div>
+        <div class="process-subsection-num">04 · <span data-i18n="planning.subsections.salesDoc.kicker">Tài liệu bán hàng</span></div>
+        <div class="process-subsection-title" data-i18n="planning.subsections.salesDoc.title">Ấn phẩm bán hàng</div>
+        <div class="process-subsection-note" data-i18n="planning.subsections.salesDoc.note">Brochure · Tờ gập · Bản đồ</div>
       </div>
-      <p class="reveal" style="margin-bottom: 1.5rem; color: var(--charcoal-light); opacity: 0.85; max-width: 720px;">
+      <p class="reveal" style="margin-bottom: 1.5rem; color: var(--charcoal-light); opacity: 0.85; max-width: 720px;" data-i18n="planning.subsections.salesDoc.desc">
         Chịu trách nhiệm từ nội dung, hình ảnh đến in ấn ra thành phẩm: tờ gập, tờ rơi, bản đồ liên kết vùng, brochure...
       </p>
-      <div class="drive-grid reveal">
-        <div class="drive-card">
-          <div class="drive-card-icon">PDF</div>
-          <div class="drive-card-title">Preview bản in tờ gập</div>
-          <p class="drive-card-desc">File PDF preview bản in tờ gập dự án — xem qua Google Drive.</p>
-          <a href="https://drive.google.com/file/d/1aYkYR0K2zHiB0_woDP9O9VTaRi0PT0OM/view?usp=sharing" target="_blank" rel="noopener" class="drive-card-cta">Mở Google Drive →</a>
-        </div>
-        <div class="drive-card">
-          <div class="drive-card-icon">PDF</div>
-          <div class="drive-card-title">Tờ gập TP</div>
-          <p class="drive-card-desc">Bản in tờ gập dự án Tân Phú Hưng — xem qua Google Drive.</p>
-          <a href="https://drive.google.com/file/d/1Tptjav8d-zVuIv_7IY6CrpqLlufAtxMw/view?usp=sharing" target="_blank" rel="noopener" class="drive-card-cta">Mở Google Drive →</a>
-        </div>
-      </div>
+      <div class="drive-grid reveal" id="sales-drive-grid"></div>
       <div class="image-grid reveal">
         <a href="assets/portfolio/4-tai-lieu-ban-hang/001.jpg" data-lightbox class="image-grid-item">
           <img src="assets/portfolio/4-tai-lieu-ban-hang/001.jpg" alt="Bản đồ quy hoạch" loading="lazy" />
@@ -486,58 +336,22 @@
     <!-- 04 Triển khai: Clip dự án -->
     <div class="process-subsection">
       <div class="process-subsection-header reveal">
-        <div class="process-subsection-num">04 · Clip dự án</div>
-        <div class="process-subsection-title">Video &amp; Clip</div>
-        <div class="process-subsection-note">Teaser · TVC · Review · Năng lực</div>
+        <div class="process-subsection-num">04 · <span data-i18n="planning.subsections.videos.kicker">Clip dự án</span></div>
+        <div class="process-subsection-title" data-i18n="planning.subsections.videos.title">Video &amp; Clip</div>
+        <div class="process-subsection-note" data-i18n="planning.subsections.videos.note">Teaser · TVC · Review · Năng lực</div>
       </div>
-      <p class="reveal" style="margin-bottom: 1.5rem; color: var(--charcoal-light); opacity: 0.85; max-width: 720px;">
+      <p class="reveal" style="margin-bottom: 1.5rem; color: var(--charcoal-light); opacity: 0.85; max-width: 720px;" data-i18n="planning.subsections.videos.desc">
         Lên kịch bản, quản lý quay chụp và sản xuất: Teaser, TVC, clip review tổng quan, clip sản phẩm, clip mô hình kinh doanh...
       </p>
-      <div class="video-grid reveal">
-        <div class="video-card">
-          <iframe src="https://drive.google.com/file/d/1pF_q_qRdENtuhFdYoHZsUTrnsAuXRrSg/preview" allow="autoplay" loading="lazy" title="Teaser Concept ECO 5"></iframe>
-          <div class="video-card-meta">
-            <div class="video-card-title">Teaser Concept ECO 5</div>
-            <a href="https://drive.google.com/file/d/1pF_q_qRdENtuhFdYoHZsUTrnsAuXRrSg/view?usp=sharing" target="_blank" rel="noopener" class="video-card-cta">Mở trên Drive →</a>
-          </div>
-        </div>
-        <div class="video-card">
-          <iframe src="https://drive.google.com/file/d/1HOVDaMsl74iAPpaHqTt7R-3Y5AKL9aTc/preview" allow="autoplay" loading="lazy" title="AMS - Năng lực triển khai"></iframe>
-          <div class="video-card-meta">
-            <div class="video-card-title">AMS — Năng lực triển khai</div>
-            <a href="https://drive.google.com/file/d/1HOVDaMsl74iAPpaHqTt7R-3Y5AKL9aTc/view?usp=drive_link" target="_blank" rel="noopener" class="video-card-cta">Mở trên Drive →</a>
-          </div>
-        </div>
-        <div class="video-card">
-          <iframe src="https://drive.google.com/file/d/1U7Bs3ODJvJfpKDiSwBB4_oIqjaN7nuMZ/preview" allow="autoplay" loading="lazy" title="Review tổng quan Sơn Phúc Andora City"></iframe>
-          <div class="video-card-meta">
-            <div class="video-card-title">Review tổng quan — Sơn Phúc Andora City</div>
-            <a href="https://drive.google.com/file/d/1U7Bs3ODJvJfpKDiSwBB4_oIqjaN7nuMZ/view?usp=sharing" target="_blank" rel="noopener" class="video-card-cta">Mở trên Drive →</a>
-          </div>
-        </div>
-        <div class="video-card">
-          <iframe src="https://drive.google.com/file/d/1LaR1_T5ZYpOY1oXmZkfyzB4jtroPEeqJ/preview" allow="autoplay" loading="lazy" title="TVC Sơn Phúc Andora City"></iframe>
-          <div class="video-card-meta">
-            <div class="video-card-title">TVC — Sơn Phúc Andora City</div>
-            <a href="https://drive.google.com/file/d/1LaR1_T5ZYpOY1oXmZkfyzB4jtroPEeqJ/view?usp=sharing" target="_blank" rel="noopener" class="video-card-cta">Mở trên Drive →</a>
-          </div>
-        </div>
-        <div class="video-card">
-          <iframe src="https://drive.google.com/file/d/135oFdV69niRwenDvTaZYMANEh9KNnUpG/preview" allow="autoplay" loading="lazy" title="The First Lounge"></iframe>
-          <div class="video-card-meta">
-            <div class="video-card-title">The First Lounge — ANmaison</div>
-            <a href="https://drive.google.com/file/d/135oFdV69niRwenDvTaZYMANEh9KNnUpG/view?usp=sharing" target="_blank" rel="noopener" class="video-card-cta">Mở trên Drive →</a>
-          </div>
-        </div>
-      </div>
+      <div class="video-grid reveal" id="videos-grid"></div>
     </div>
 
     <!-- 04 Triển khai: PR -->
     <div class="process-subsection">
       <div class="process-subsection-header reveal">
-        <div class="process-subsection-num">04 · PR</div>
-        <div class="process-subsection-title">Báo chí &amp; PR</div>
-        <div class="process-subsection-note">Định hướng nội dung · Thông cáo</div>
+        <div class="process-subsection-num">04 · <span data-i18n="planning.subsections.pr.kicker">PR</span></div>
+        <div class="process-subsection-title" data-i18n="planning.subsections.pr.title">Báo chí &amp; PR</div>
+        <div class="process-subsection-note" data-i18n="planning.subsections.pr.note">Định hướng nội dung · Thông cáo</div>
       </div>
       <div class="image-grid reveal">
         <a href="assets/portfolio/7-pr/001.jpg" data-lightbox class="image-grid-item"><img src="assets/portfolio/7-pr/001.jpg" alt="PR 1" loading="lazy"/></a>
@@ -551,9 +365,9 @@
     <!-- 04 Triển khai: OOH -->
     <div class="process-subsection">
       <div class="process-subsection-header reveal">
-        <div class="process-subsection-num">04 · OOH</div>
-        <div class="process-subsection-title">Quảng cáo ngoài trời</div>
-        <div class="process-subsection-note">Billboard · Biển bảng · Phướn</div>
+        <div class="process-subsection-num">04 · <span data-i18n="planning.subsections.ooh.kicker">OOH</span></div>
+        <div class="process-subsection-title" data-i18n="planning.subsections.ooh.title">Quảng cáo ngoài trời</div>
+        <div class="process-subsection-note" data-i18n="planning.subsections.ooh.note">Billboard · Biển bảng · Phướn</div>
       </div>
       <div class="image-grid reveal">
         <a href="assets/portfolio/8-ooh/001.jpg" data-lightbox class="image-grid-item"><img src="assets/portfolio/8-ooh/001.jpg" alt="OOH Billboard" loading="lazy"/></a>
@@ -565,21 +379,12 @@
     <!-- 04 Triển khai: Event -->
     <div class="process-subsection">
       <div class="process-subsection-header reveal">
-        <div class="process-subsection-num">04 · Event</div>
-        <div class="process-subsection-title">Sự kiện</div>
-        <div class="process-subsection-note">Proposal · Kịch bản · MC Script · 3D</div>
+        <div class="process-subsection-num">04 · <span data-i18n="planning.subsections.event.kicker">Event</span></div>
+        <div class="process-subsection-title" data-i18n="planning.subsections.event.title">Sự kiện</div>
+        <div class="process-subsection-note" data-i18n="planning.subsections.event.note">Proposal · Kịch bản · MC Script · 3D</div>
       </div>
 
-      <div class="event-highlight reveal">
-        <div class="event-highlight-item">
-          <h4>Sự kiện Training tại rạp chiếu phim</h4>
-          <p>Sự kiện training đầu tiên tại rạp chiếu phim với hơn 1.000 người tham dự của dự án Gold Coast Vũng Tàu.</p>
-        </div>
-        <div class="event-highlight-item">
-          <h4>CEO Meeting sang trọng · Fine Dining</h4>
-          <p>Sự kiện CEO Meeting sang trọng kết hợp fine dining đầu tiên của dự án ANmaison.</p>
-        </div>
-      </div>
+      <div class="event-highlight reveal" id="event-highlight"></div>
 
       <div class="image-grid reveal">
         <a href="assets/portfolio/9-event/001.jpg" data-lightbox class="image-grid-item"><img src="assets/portfolio/9-event/001.jpg" alt="Sự kiện 1" loading="lazy"/></a>
@@ -596,9 +401,9 @@
     <!-- 04 Triển khai: Kênh khác -->
     <div class="process-subsection">
       <div class="process-subsection-header reveal">
-        <div class="process-subsection-num">04 · Kênh khác</div>
-        <div class="process-subsection-title">Digital · Roadshow · Livestream · VOV</div>
-        <div class="process-subsection-note">Đa kênh bổ trợ</div>
+        <div class="process-subsection-num">04 · <span data-i18n="planning.subsections.channels.kicker">Kênh khác</span></div>
+        <div class="process-subsection-title" data-i18n="planning.subsections.channels.title">Digital · Roadshow · Livestream · VOV</div>
+        <div class="process-subsection-note" data-i18n="planning.subsections.channels.note">Đa kênh bổ trợ</div>
       </div>
       <div class="image-grid reveal">
         <a href="assets/portfolio/10-kenh-khac/001.jpg" data-lightbox class="image-grid-item"><img src="assets/portfolio/10-kenh-khac/001.jpg" alt="Kênh khác 1" loading="lazy"/></a>
@@ -615,91 +420,13 @@
 <!-- ====== PROJECTS ====== -->
 <section id="projects" class="section projects">
   <div class="section-header">
-    <div class="section-eyebrow reveal">Dự án tiêu biểu</div>
+    <div class="section-eyebrow reveal" data-i18n="projects.eyebrow">Dự án tiêu biểu</div>
     <h2 class="section-title reveal">
-      Những dự án <span class="italic">đã đồng hành.</span>
+      <span data-i18n="projects.title1">Những dự án </span><span class="italic" data-i18n="projects.title2">đã đồng hành.</span>
     </h2>
   </div>
 
-  <div class="projects-grid">
-    <a href="projects/gold-coast-cinema.png" data-lightbox class="project-card reveal">
-      <img src="projects/gold-coast-cinema.png" alt="Gold Coast Cinema Training" loading="lazy"/>
-      <div class="project-overlay">
-        <div class="project-name">Gold Coast Cinema Training</div>
-        <div class="project-tag">Sự kiện · 1.000+ người</div>
-      </div>
-    </a>
-    <a href="projects/gold-coast-times-square.png" data-lightbox class="project-card reveal">
-      <img src="projects/gold-coast-times-square.png" alt="Gold Coast Times Square" loading="lazy"/>
-      <div class="project-overlay">
-        <div class="project-name">Gold Coast Times Square</div>
-        <div class="project-tag">Activation</div>
-      </div>
-    </a>
-    <a href="projects/gold-coast-training.png" data-lightbox class="project-card reveal">
-      <img src="projects/gold-coast-training.png" alt="Gold Coast Training" loading="lazy"/>
-      <div class="project-overlay">
-        <div class="project-name">Gold Coast Training</div>
-        <div class="project-tag">Sales Activation</div>
-      </div>
-    </a>
-    <a href="projects/gold-coast-roadshow.png" data-lightbox class="project-card reveal">
-      <img src="projects/gold-coast-roadshow.png" alt="Gold Coast Roadshow" loading="lazy"/>
-      <div class="project-overlay">
-        <div class="project-name">Gold Coast Roadshow</div>
-        <div class="project-tag">Roadshow</div>
-      </div>
-    </a>
-    <a href="projects/gold-coast-ooh.png" data-lightbox class="project-card reveal">
-      <img src="projects/gold-coast-ooh.png" alt="Gold Coast OOH" loading="lazy"/>
-      <div class="project-overlay">
-        <div class="project-name">Gold Coast OOH</div>
-        <div class="project-tag">Quảng cáo ngoài trời</div>
-      </div>
-    </a>
-    <a href="projects/park-lane.png" data-lightbox class="project-card reveal">
-      <img src="projects/park-lane.png" alt="Park Lane" loading="lazy"/>
-      <div class="project-overlay">
-        <div class="project-name">Park Lane</div>
-        <div class="project-tag">Concept · Visual</div>
-      </div>
-    </a>
-    <a href="projects/ramond-urbaniz.png" data-lightbox class="project-card reveal">
-      <img src="projects/ramond-urbaniz.png" alt="Ramond Urbaniz" loading="lazy"/>
-      <div class="project-overlay">
-        <div class="project-name">Ramond Urbaniz</div>
-        <div class="project-tag">Dự án cao tầng</div>
-      </div>
-    </a>
-    <a href="projects/seaview-tower.png" data-lightbox class="project-card reveal">
-      <img src="projects/seaview-tower.png" alt="Seaview Tower" loading="lazy"/>
-      <div class="project-overlay">
-        <div class="project-name">Seaview Tower</div>
-        <div class="project-tag">Dự án ven biển</div>
-      </div>
-    </a>
-    <a href="projects/hoi-an-legacy.png" data-lightbox class="project-card reveal">
-      <img src="projects/hoi-an-legacy.png" alt="Hội An Legacy" loading="lazy"/>
-      <div class="project-overlay">
-        <div class="project-name">Hội An Legacy</div>
-        <div class="project-tag">Du lịch · Văn hóa</div>
-      </div>
-    </a>
-    <a href="projects/event-activation.png" data-lightbox class="project-card reveal">
-      <img src="projects/event-activation.png" alt="Event Activation" loading="lazy"/>
-      <div class="project-overlay">
-        <div class="project-name">Event Activation</div>
-        <div class="project-tag">Activation</div>
-      </div>
-    </a>
-    <a href="projects/pho-hoi-activation.png" data-lightbox class="project-card reveal">
-      <img src="projects/pho-hoi-activation.png" alt="Phố Hội Activation" loading="lazy"/>
-      <div class="project-overlay">
-        <div class="project-name">Phố Hội Activation</div>
-        <div class="project-tag">Activation</div>
-      </div>
-    </a>
-  </div>
+  <div class="projects-grid" id="projects-grid"></div>
 </section>
 
 <!-- ====== FOOTER ====== -->
@@ -708,41 +435,48 @@
     <div class="footer-top">
       <div>
         <h2 class="footer-cta-title reveal">
-          Cùng nhau kiến tạo<br/>
-          <span class="accent">những chiến dịch</span> ý nghĩa.
+          <span data-i18n="footer.ctaTitle1">Cùng nhau kiến tạo</span><br/>
+          <span class="accent" data-i18n="footer.ctaTitle2">những chiến dịch</span> <span data-i18n="footer.ctaTitle3">ý nghĩa.</span>
         </h2>
-        <a href="mailto:contact@ahnthu1209.github.io" class="footer-cta-btn reveal">
+        <a href="mailto:contact@ahnthu1209.github.io" class="footer-cta-btn reveal" data-i18n="footer.ctaBtn">
           Liên hệ hợp tác →
         </a>
       </div>
 
       <div>
-        <div class="footer-col-title">Liên kết</div>
+        <div class="footer-col-title" data-i18n="footer.linksTitle">Liên kết</div>
         <ul class="footer-links">
-          <li><a href="#hero">Trang chủ</a></li>
-          <li><a href="#about">Giới thiệu</a></li>
-          <li><a href="#experience">Kinh nghiệm</a></li>
-          <li><a href="#planning">Marketing Planning</a></li>
-          <li><a href="#projects">Dự án</a></li>
+          <li><a href="#hero" data-i18n="footer.linkHome">Trang chủ</a></li>
+          <li><a href="#about" data-i18n="footer.linkAbout">Giới thiệu</a></li>
+          <li><a href="#experience" data-i18n="footer.linkExperience">Kinh nghiệm</a></li>
+          <li><a href="#planning" data-i18n="footer.linkPlanning">Marketing Planning</a></li>
+          <li><a href="#projects" data-i18n="footer.linkProjects">Dự án</a></li>
         </ul>
       </div>
 
       <div>
-        <div class="footer-col-title">Chuyên môn</div>
+        <div class="footer-col-title" data-i18n="footer.expertiseTitle">Chuyên môn</div>
         <ul class="footer-links">
-          <li><a href="#planning">IMC Planning</a></li>
-          <li><a href="#planning">Concept Development</a></li>
-          <li><a href="#planning">Event Coordination</a></li>
-          <li><a href="#planning">Content Creation</a></li>
-          <li><a href="#planning">Market Research</a></li>
+          <li><a href="#planning" data-i18n="footer.expertiseIMC">IMC Planning</a></li>
+          <li><a href="#planning" data-i18n="footer.expertiseConcept">Concept Development</a></li>
+          <li><a href="#planning" data-i18n="footer.expertiseEvent">Event Coordination</a></li>
+          <li><a href="#planning" data-i18n="footer.expertiseContent">Content Creation</a></li>
+          <li><a href="#planning" data-i18n="footer.expertiseResearch">Market Research</a></li>
         </ul>
+      </div>
+
+      <div>
+        <div class="footer-col-title" data-i18n="lang.en">Language</div>
+        <button class="lang-toggle lang-toggle-block" type="button" data-lang="en" aria-label="Switch to English">
+          <span class="lang-toggle-label">EN</span>
+        </button>
       </div>
     </div>
 
     <div class="footer-bottom">
-      <div>© 2026 Phùng Anh Thư · Marketing Executive Portfolio</div>
+      <div data-i18n="footer.copyright">© 2026 Phùng Anh Thư · Marketing Executive Portfolio</div>
       <div>
-        <a href="https://github.com/ahnthu1209/ahnthu1209.github.io" target="_blank" rel="noopener">github.com/ahnthu1209</a>
+        <a href="https://github.com/ahnthu1209/ahnthu1209.github.io" target="_blank" rel="noopener" data-i18n-attr="aria-label:footer.github">github.com/ahnthu1209</a>
       </div>
     </div>
   </div>
@@ -754,6 +488,8 @@
   <img id="lightbox-img" src="" alt="" />
 </div>
 
+<script src="assets/js/i18n.js"></script>
+<script src="assets/js/i18n-render.js"></script>
 <script src="assets/js/main.js"></script>
 </body>
 </html>
