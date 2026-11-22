@@ -1,0 +1,251 @@
+{
+  "counts": [
+    {
+      "lesson": 1,
+      "sourceVocabPage": 2,
+      "vocabRows": 10,
+      "vocabCols": 4,
+      "nonEmptyCells": 40,
+      "expectedCells": 40,
+      "grammarPages": [
+        4,
+        5,
+        6
+      ],
+      "grammarTopics": 3,
+      "wrappedVnCells": [],
+      "valid": true
+    },
+    {
+      "lesson": 2,
+      "sourceVocabPage": 8,
+      "vocabRows": 10,
+      "vocabCols": 3,
+      "nonEmptyCells": 30,
+      "expectedCells": 30,
+      "grammarPages": [
+        10
+      ],
+      "grammarTopics": 1,
+      "wrappedVnCells": [],
+      "valid": true
+    },
+    {
+      "lesson": 3,
+      "sourceVocabPage": 12,
+      "vocabRows": 11,
+      "vocabCols": 4,
+      "nonEmptyCells": 43,
+      "expectedCells": 43,
+      "grammarPages": [
+        14
+      ],
+      "grammarTopics": 1,
+      "wrappedVnCells": [],
+      "valid": true
+    },
+    {
+      "lesson": 4,
+      "sourceVocabPage": 16,
+      "vocabRows": 10,
+      "vocabCols": 4,
+      "nonEmptyCells": 39,
+      "expectedCells": 39,
+      "grammarPages": [
+        18
+      ],
+      "grammarTopics": 1,
+      "wrappedVnCells": [],
+      "valid": true
+    },
+    {
+      "lesson": 5,
+      "sourceVocabPage": 21,
+      "vocabRows": 10,
+      "vocabCols": 4,
+      "nonEmptyCells": 37,
+      "expectedCells": 37,
+      "grammarPages": [
+        23
+      ],
+      "grammarTopics": 1,
+      "wrappedVnCells": [
+        "b5-r4c1",
+        "b5-r6c1"
+      ],
+      "valid": true
+    },
+    {
+      "lesson": 6,
+      "sourceVocabPage": 25,
+      "vocabRows": 11,
+      "vocabCols": 3,
+      "nonEmptyCells": 31,
+      "expectedCells": 31,
+      "grammarPages": [
+        27,
+        28
+      ],
+      "grammarTopics": 2,
+      "wrappedVnCells": [],
+      "valid": true
+    },
+    {
+      "lesson": 7,
+      "sourceVocabPage": 30,
+      "vocabRows": 10,
+      "vocabCols": 4,
+      "nonEmptyCells": 40,
+      "expectedCells": 40,
+      "grammarPages": [
+        32
+      ],
+      "grammarTopics": 1,
+      "wrappedVnCells": [
+        "b7-r3c1"
+      ],
+      "valid": true
+    },
+    {
+      "lesson": 8,
+      "sourceVocabPage": 34,
+      "vocabRows": 11,
+      "vocabCols": 3,
+      "nonEmptyCells": 32,
+      "expectedCells": 32,
+      "grammarPages": [
+        36
+      ],
+      "grammarTopics": 1,
+      "wrappedVnCells": [],
+      "valid": true
+    },
+    {
+      "lesson": 9,
+      "sourceVocabPage": 38,
+      "vocabRows": 11,
+      "vocabCols": 4,
+      "nonEmptyCells": 44,
+      "expectedCells": 44,
+      "grammarPages": [
+        40
+      ],
+      "grammarTopics": 1,
+      "wrappedVnCells": [],
+      "valid": true
+    },
+    {
+      "lesson": 10,
+      "sourceVocabPage": 42,
+      "vocabRows": 10,
+      "vocabCols": 4,
+      "nonEmptyCells": 38,
+      "expectedCells": 38,
+      "grammarPages": [
+        44
+      ],
+      "grammarTopics": 1,
+      "wrappedVnCells": [],
+      "valid": true
+    }
+  ],
+  "totalEntries": 374,
+  "uniqueWrittenForms": 370,
+  "duplicates": {
+    "还": [
+      {
+        "lesson": 1,
+        "page": 2,
+        "pinyin": "hái",
+        "vi": "vẫn còn, còn"
+      },
+      {
+        "lesson": 5,
+        "page": 21,
+        "pinyin": "hái / huán",
+        "vi": "vẫn còn, trả lại"
+      }
+    ],
+    "过去": [
+      {
+        "lesson": 1,
+        "page": 2,
+        "pinyin": "guò qù",
+        "vi": "quá khứ, trước đây"
+      },
+      {
+        "lesson": 4,
+        "page": 16,
+        "pinyin": "guò qù",
+        "vi": "đi qua phía kia"
+      }
+    ],
+    "落": [
+      {
+        "lesson": 3,
+        "page": 12,
+        "pinyin": "luò",
+        "vi": "rơi, rụng"
+      },
+      {
+        "lesson": 7,
+        "page": 30,
+        "pinyin": "là",
+        "vi": "bỏ quên"
+      }
+    ],
+    "着": [
+      {
+        "lesson": 7,
+        "page": 30,
+        "pinyin": "zhe / zháo",
+        "vi": "trợ từ trạng thái, đạt được"
+      },
+      {
+        "lesson": 10,
+        "page": 42,
+        "pinyin": "zhe",
+        "vi": "trợ từ trạng thái"
+      }
+    ]
+  },
+  "flags": [
+    {
+      "lesson": 10,
+      "page": 42,
+      "word": "新浪",
+      "source": "新浪 · Xīnlàng · Sina (tên nền tảng)",
+      "suggested": "新郎 · xīnláng · chú rể",
+      "status": "cần đối chiếu ảnh/bản gốc người dạy",
+      "note": "Chú thích ngay trong PDF nêu đây có thể là lỗi ở bảng từ. Không tự thay đổi từ gốc hay dùng nghĩa suy đoán."
+    },
+    {
+      "lesson": 5,
+      "page": 21,
+      "word": "中医",
+      "status": "đã kiểm tra xuống dòng",
+      "note": "Nghĩa tiếng Việt trong ô nguồn xuống dòng; ghép lại thành 'Đông y, thầy thuốc Đông y' mà không thêm chữ."
+    },
+    {
+      "lesson": 5,
+      "page": 21,
+      "word": "中成药",
+      "status": "đã kiểm tra xuống dòng",
+      "note": "Nghĩa tiếng Việt trong ô nguồn xuống dòng; ghép lại thành 'thuốc Đông y bào chế sẵn' mà không thêm chữ."
+    },
+    {
+      "lesson": 7,
+      "page": 30,
+      "word": "着",
+      "status": "đã kiểm tra nhiều âm đọc",
+      "note": "Giữ nguyên hai cách đọc zhe / zháo và nghĩa ghi trong bảng, không ép về một cách đọc."
+    },
+    {
+      "lesson": 7,
+      "page": 30,
+      "word": "落",
+      "status": "đã kiểm tra nhiều âm đọc",
+      "note": "Bài 3 dùng luò (rụng), bài 7 dùng là (bỏ quên). Cần giữ hai ô riêng."
+    }
+  ]
+}
