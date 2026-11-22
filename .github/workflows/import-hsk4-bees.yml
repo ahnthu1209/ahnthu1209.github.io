@@ -1,0 +1,44 @@
+name: Import HSK4 Mascot Images
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/import-hsk4-bees.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  import-images:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download original mascot crops
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p hsk4/assets
+          curl --fail --location --silent --show-error --retry 3 --max-time 90 "https://media.canva.com/v2/image-resize/format:PNG/height:150/quality:100/uri:ifs%3A%2F%2FM%2F9e4aaf5f-9f30-4206-a59f-4fa3a4ab0aa5/watermark:F/width:150?csig=AAAAAAAAAAAAAAAAAAAAAORE7WpuCI5CXDSyXG_mfNmwMiggAu-cO9C9FF79RQHs&exp=1795378190&osig=AAAAAAAAAAAAAAAAAAAAAJg1zBUTUIj7tLzpczBucPtS6AzKYkGdH6OZWMnin7Ti&signer=media-rpc&token=AAIAAU0AJDllNGFhZjVmLTlmMzAtNDIwNi1hNTlmLTRmYTNhNGFiMGFhNQAAAAABogThFrBXL8H7LgcNP-GkMhYc0SvZz05qHQFdwnNkOZc_0XuNag&x-canva-quality=thumbnail" -o hsk4/assets/bee-happy.png
+          curl --fail --location --silent --show-error --retry 3 --max-time 90 "https://media.canva.com/v2/image-resize/format:PNG/height:150/quality:100/uri:ifs%3A%2F%2FM%2F3e6ce7d9-88a3-40ae-a92d-acc108935b03/watermark:F/width:150?csig=AAAAAAAAAAAAAAAAAAAAADsdJkBpwdaiPEHVvsERp9Q8Ru9rXhakm7OTDpbZ-yTF&exp=1795378280&osig=AAAAAAAAAAAAAAAAAAAAAPIWlNT7MLNYRQYeOZ0tT45TugruelXYkngS0-02ac2x&signer=media-rpc&token=AAIAAU0AJDNlNmNlN2Q5LTg4YTMtNDBhZS1hOTJkLWFjYzEwODkzNWIwMwAAAAABogTidkD2dlDQElOIddU2whkHzhiY2rBRQlOnLWO_-ZLvxzB7nA&x-canva-quality=thumbnail" -o hsk4/assets/bee-sad.png
+          curl --fail --location --silent --show-error --retry 3 --max-time 90 "https://media.canva.com/v2/image-resize/format:PNG/height:150/quality:100/uri:ifs%3A%2F%2FM%2F903534d1-1e38-4598-89cd-5b3f251fc4ae/watermark:F/width:150?csig=AAAAAAAAAAAAAAAAAAAAAJHfkdpHH73TPZ_o4MoAD1Bb6lzyhjR-sW9TXewpXWaV&exp=1795376963&osig=AAAAAAAAAAAAAAAAAAAAAGwGeijDbdsgfFfbj6vEmDhaTYAbD9VOgdun79Jksg6h&signer=media-rpc&token=AAIAAU0AJDkwMzUzNGQxLTFlMzgtNDU5OC04OWNkLTViM2YyNTFmYzRhZQAAAAABogTOXbiJzoR8YXb63gL36X60FQIyvqY1mvVEwS8rA0RXdFQOfw&x-canva-quality=thumbnail" -o hsk4/assets/bee-surprised.png
+          curl --fail --location --silent --show-error --retry 3 --max-time 90 "https://media.canva.com/v2/image-resize/format:PNG/height:150/quality:100/uri:ifs%3A%2F%2FM%2Fc2930724-3cdb-4dfe-8ece-1cb4952e82e9/watermark:F/width:150?csig=AAAAAAAAAAAAAAAAAAAAAETTgIDZmmeYmquXMZ4ntCcbUhAS62ylAp5ImzKm5HNA&exp=1795378334&osig=AAAAAAAAAAAAAAAAAAAAADmxWh_5y16KkrHWSwqdi26AzFkX5BhSE4puy98_6frb&signer=media-rpc&token=AAIAAU0AJGMyOTMwNzI0LTNjZGItNGRmZS04ZWNlLTFjYjQ5NTJlODJlOQAAAAABogTjSTANrvdeNERu4OH-4l4YkoEJht-8PeUkCz8WbFKT7vFaGQ&x-canva-quality=thumbnail" -o hsk4/assets/bee-thinking.png
+          curl --fail --location --silent --show-error --retry 3 --max-time 90 "https://media.canva.com/v2/image-resize/format:PNG/height:150/quality:100/uri:ifs%3A%2F%2FM%2F517d7589-3336-4182-b255-39a4e755538e/watermark:F/width:150?csig=AAAAAAAAAAAAAAAAAAAAAPwQLlvqjHLY_CHIE2xtojlg5zVS4lDx3f246vBNUK7n&exp=1795376179&osig=AAAAAAAAAAAAAAAAAAAAAM0k2uX0bm8Uz2lbuNB_3zzPiSrLVdeB9-n_mdkLYoqg&signer=media-rpc&token=AAIAAU0AJDUxN2Q3NTg5LTMzMzYtNDE4Mi1iMjU1LTM5YTRlNzU1NTM4ZQAAAAABogTCZzh-ivb-BHes1Yo2N6hMQZRn-XkjGGY17ajhVX0UJVELSQ&x-canva-quality=thumbnail" -o hsk4/assets/bee-serious.png
+          curl --fail --location --silent --show-error --retry 3 --max-time 90 "https://media.canva.com/v2/image-resize/format:PNG/height:150/quality:100/uri:ifs%3A%2F%2FM%2Feb5fe4b7-bd59-4f6b-9263-6653559754ac/watermark:F/width:150?csig=AAAAAAAAAAAAAAAAAAAAAFeJ4TAU5BGt3EJ8CQH55EXHMHkrwadvJozYuRS8cbMI&exp=1795378271&osig=AAAAAAAAAAAAAAAAAAAAAOeMUoAOziWns5By2TpwUwK9-6ftLzbhWyAlRCjYfSiH&signer=media-rpc&token=AAIAAU0AJGViNWZlNGI3LWJkNTktNGY2Yi05MjYzLTY2NTM1NTk3NTRhYwAAAAABogTiUxhZJ9WTVzZbSwdeqXQ0p3N3NNeTJCiSDWjYj2hsqyNumw&x-canva-quality=thumbnail" -o hsk4/assets/bee-wink.png
+          file hsk4/assets/bee-*.png
+          python3 - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          for p in Path('hsk4/assets').glob('bee-*.png'):
+              with Image.open(p) as im:
+                  assert im.size[0]>=140 and im.size[1]>=140, f"Invalid mascot dimensions: {p}"
+                  im.verify()
+          print("Verified 6 cropped bee mascot images")
+          PY
+      - name: Commit permanent public mascot assets
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add hsk4/assets/bee-*.png
+          git diff --cached --quiet && exit 0
+          git commit -m 'Add original bee mascot expressions for HSK4 classroom'
+          git push
