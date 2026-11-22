@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#382419">
+  <meta name="description" content="Thư mời tương tác The Ambassador of Selection – Solina Signature by Wyndham, 26.11.2026 tại White Palace Phạm Văn Đồng.">
+  <title>The Ambassador of Selection | Solina Signature by Wyndham</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" as="image" href="assets/frame-1.webp">
+  <link rel="preload" as="image" href="assets/frame-2.webp">
+  <style>
+    :root{--cognac:#69402e;--forest:#052a30;--ivory:#ede6d9;--sand:#e5c6a1;--ink:#e9ddd0;--ease:cubic-bezier(.22,1,.36,1)}
+    *,*::before,*::after{box-sizing:border-box}
+    html,body{margin:0;width:100%;min-height:100%;background:#261a16}
+    body{font-family:Arial,Helvetica,sans-serif;color:var(--ink);overflow:hidden;overscroll-behavior:none}
+    button{font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+    button:focus-visible{outline:2px solid #f7ddba;outline-offset:5px}
+    .layout{height:100svh;min-height:500px;display:grid;grid-template-columns:minmax(0,1fr) minmax(315px,460px) minmax(0,1fr);align-items:center;justify-items:center;gap:clamp(28px,5vw,86px);padding:0 clamp(24px,5vw,85px);background:radial-gradient(ellipse 45% 70% at 50% 45%,#69422d 0%,#35231c 65%,#1c1412 100%);position:relative;isolation:isolate}
+    .layout::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent,transparent 59px,#ffffff03 60px);pointer-events:none}
+    .side{width:100%;max-width:410px;z-index:1}
+    .side--left{justify-self:end;align-self:center}
+    .side--right{justify-self:start;align-self:center}
+    .eyebrow{font-size:10px;letter-spacing:.27em;font-weight:600;color:#c8b19d;line-height:1.8}
+    .brand{font-family:Georgia,'Times New Roman',serif;font-size:clamp(28px,3vw,46px);font-weight:400;letter-spacing:.2em;line-height:1.2;margin:18px 0 2px;color:#f4e9df}
+    .signature{font-size:8px;letter-spacing:.36em;margin-bottom:50px;color:#c7b2a0}
+    .side h1{font-family:Georgia,'Times New Roman',serif;font-size:clamp(35px,3.5vw,58px);font-weight:400;line-height:1.1;letter-spacing:-.025em;margin:0 0 24px}
+    .side h1 em{font-style:italic;color:#e2bc9d}
+    .side p{font-size:13px;line-height:1.85;color:#d3bfae;max-width:330px}
+    .fine-line{height:1px;width:72px;background:#b8947c;opacity:.7;margin:30px 0}
+    .side--right .eyebrow{margin-bottom:26px}
+    .right-row{border-top:1px solid #cba8873d;padding:18px 0;display:flex;gap:16px;align-items:baseline}
+    .right-row b{font-weight:400;color:#e3c8b5;font:20px Georgia,serif}
+    .right-row span{font-size:11px;line-height:1.75;letter-spacing:.06em;color:#d7c7bb}
+    .side-help{margin-top:20px;font-size:11px;color:#bba99e;line-height:1.9}
+    .experience{position:relative;z-index:2;height:min(94svh,820px);width:min(100%,calc(94svh * .5625));max-width:460px;aspect-ratio:9/16;overflow:hidden;background:#69402e;border-radius:14px;box-shadow:0 25px 100px #060404bd,0 0 0 1px #f0d5c229;touch-action:pan-x;isolation:isolate;user-select:none;-webkit-user-select:none}
+    .scene{position:absolute;inset:0;opacity:0;visibility:hidden;pointer-events:none;transform:translateY(0) scale(1);transform-origin:center;z-index:1;transition:opacity .68s ease, transform .9s var(--ease), visibility 0s linear .7s;will-change:opacity,transform}
+    .scene.current{opacity:1;visibility:visible;transition:opacity .7s ease, transform .9s var(--ease),visibility 0s;z-index:3}
+    .scene.underlay{opacity:1;visibility:visible;z-index:2;transition:none}
+    .scene.leaving-up{opacity:0;transform:translateY(-12%) scale(1.06);visibility:visible;transition:opacity .72s ease,transform .95s var(--ease)}
+    .scene.leaving-down{opacity:0;transform:translateY(10%) scale(.97);visibility:visible;transition:opacity .72s ease,transform .9s var(--ease)}
+    .scene.entering-up{opacity:1;visibility:visible;transform:translateY(0) scale(1);z-index:2}
+    .scene.entering-down{opacity:1;visibility:visible;transform:translateY(0) scale(1);z-index:2}
+    .visual{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center center;pointer-events:none}
+    .scene--envelope{z-index:4!important;transform-origin:50% 20%}
+    .scene--envelope.open-envelope{opacity:1;visibility:visible;transform:translateY(108%);transition:transform 1.12s cubic-bezier(.67,.02,.22,1),opacity .28s ease 1s;z-index:7!important}
+    .scene--envelope .flap{position:absolute;inset:0;background:url('assets/frame-1.webp') center/cover no-repeat;clip-path:polygon(0 0,100% 0,100% 30%,50% 49%,0 30%);transform-origin:50% 29%;opacity:0;pointer-events:none}
+    .scene--envelope.open-envelope .flap{opacity:1;animation:flap 0.82s var(--ease) both}
+    @keyframes flap{0%{transform:perspective(700px) rotateX(0) translateY(0);opacity:1}65%{transform:perspective(700px) rotateX(85deg) translateY(-10%);opacity:1}100%{transform:perspective(700px) rotateX(110deg) translateY(-15%);opacity:0}}
+    .seal-target,.bow-target,.bell-target{position:absolute;z-index:12;border:0;background:transparent;display:grid;place-items:center;color:transparent;border-radius:50%;touch-action:manipulation}
+    .seal-target{left:50%;top:50%;width:38%;aspect-ratio:1;transform:translate(-50%,-50%)}
+    .seal-target::after,.bow-target::after,.bell-target::after{content:"";position:absolute;inset:-5%;border:1px solid #f8f0dc80;border-radius:50%;animation:pulse 2.8s ease-in-out infinite;opacity:.65}
+    .bow-target{left:50%;top:51%;width:46%;height:17%;transform:translate(-50%,-50%);border-radius:40%}
+    .bow-target::after{border-radius:50%;inset:3% 31%}
+    @keyframes pulse{0%,100%{transform:scale(.95);opacity:.12}48%{transform:scale(1.11);opacity:.85}}
+    .gate-panel{position:absolute;inset:0;z-index:6;display:none;pointer-events:none;perspective:1100px;transform-style:preserve-3d}
+    .gate-panel .leaf{position:absolute;inset:0;background:url('assets/frame-2.webp') center/cover no-repeat;backface-visibility:hidden;filter:drop-shadow(4px 0 9px #120e0c70)}
+    .gate-panel .leaf--left{clip-path:polygon(50% 13%,42% 13.7%,35% 16%,29% 19%,23% 24%,18% 30%,17% 36%,17% 87%,50% 87%);transform-origin:17% 58%}
+    .gate-panel .leaf--right{clip-path:polygon(50% 13%,58% 13.7%,65% 16%,71% 19%,77% 24%,82% 30%,83% 36%,83% 87%,50% 87%);transform-origin:83% 58%}
+    .experience.gate-opening .gate-panel{display:block}
+    .experience.gate-opening .leaf--left{animation:openLeft 1.42s var(--ease) .42s forwards}
+    .experience.gate-opening .leaf--right{animation:openRight 1.42s var(--ease) .48s forwards}
+    @keyframes openLeft{0%{transform:perspective(1000px) rotateY(0deg) translateX(0);opacity:1}100%{transform:perspective(1000px) rotateY(-78deg) translateX(-4%);opacity:.16}}
+    @keyframes openRight{0%{transform:perspective(1000px) rotateY(0deg) translateX(0);opacity:1}100%{transform:perspective(1000px) rotateY(78deg) translateX(4%);opacity:.16}}
+    .experience.gate-opening .scene--door{animation:doorFade 1.1s .29s forwards}
+    @keyframes doorFade{0%,20%{opacity:1}100%{opacity:0}}
+    .experience.gate-opening .scene--welcome .visual{animation:cameraThrough 1.7s var(--ease) .35s both}
+    @keyframes cameraThrough{0%{transform:scale(.91);filter:blur(3px)}100%{transform:scale(1);filter:blur(0)}}
+    .experience.gate-opening .bow-target,.experience.envelope-opening .seal-target{display:none}
+    .scene--cup.ringing .visual{animation:ringCamera 0.8s var(--ease)}
+    @keyframes ringCamera{0%,100%{transform:scale(1)}45%{transform:scale(1.045)}75%{transform:scale(1.025)}}
+    .bell-target{left:82%;top:47%;width:13%;height:14%;transform:translate(-50%,-50%);border-radius:32px}
+    .bell-target::after{border-color:#d7ba94bb}
+    .light-sweep{position:absolute;inset:0;pointer-events:none;background:linear-gradient(122deg,transparent 34%,#fff8e530 48%,transparent 60%);transform:translateX(-160%);z-index:7}
+    .scene.current .light-sweep{animation:lightPass 5.8s ease-in-out 1.1s infinite}
+    @keyframes lightPass{0%,60%{transform:translateX(-160%)}100%{transform:translateX(160%)}}
+    .scene--envelope .light-sweep{mix-blend-mode:soft-light;opacity:.45}
+    .scene--envelope.current .light-sweep{animation-duration:7s}
+    .hud{position:absolute;inset:auto 0 0;z-index:15;pointer-events:none;padding:0 20px max(22px,env(safe-area-inset-bottom));background:linear-gradient(to top,#211713aa 0%,#2117133c 63%,transparent 100%);color:#f8ebdc;text-align:center}
+    .hud>*{pointer-events:auto}
+    .hud .instruction{font-size:10px;letter-spacing:.16em;text-transform:uppercase;line-height:1.6;text-shadow:0 1px 9px #100b0bb5;margin:0 0 13px}
+    .hud .bottom-row{display:flex;gap:11px;align-items:center;justify-content:space-between}
+    .btn{border:1px solid #f1dfc96b;backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);background:#e8d8c120;color:#ffefe2;border-radius:40px;padding:11px 18px;min-height:43px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;transition:background .25s,transform .25s}
+    .btn:active{transform:scale(.965)}
+    .btn:hover{background:#f6e3ce3b}
+    .btn--primary{background:#f4e8d5;color:#543827;border-color:#f4e8d5;font-weight:700;box-shadow:0 4px 20px #1d110c3a}
+    .btn--primary:hover{background:#ffffff}
+    .btn--icon{border-radius:50%;height:43px;width:43px;padding:0;display:grid;place-items:center}
+    .btn svg{height:15px;width:15px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+    .progress{display:flex;gap:5px;margin:17px auto 0;max-width:185px;justify-content:center}
+    .progress i{height:2px;flex:1;border-radius:6px;background:#faf1e452;overflow:hidden;position:relative}
+    .progress i::after{content:"";position:absolute;inset:0;background:#fff1da;transform:scaleX(0);transform-origin:left;transition:transform .48s}
+    .progress i.done::after{transform:scaleX(1)}
+    .step-text{position:absolute;z-index:15;right:18px;top:max(20px,env(safe-area-inset-top));font-size:10px;letter-spacing:.15em;color:#e0c4a9;text-shadow:0 1px 5px #0007;opacity:0;transition:opacity .4s}
+    .step-text.show{opacity:1}
+    .top-sound{position:absolute;z-index:18;left:16px;top:max(15px,env(safe-area-inset-top));color:#fde5c8;opacity:.8;display:none}
+    .toast{position:absolute;z-index:21;top:calc(14% + env(safe-area-inset-top));left:50%;width:max-content;max-width:80%;transform:translate(-50%,-8px);opacity:0;pointer-events:none;background:#f1e7d7ee;color:#563929;box-shadow:0 6px 25px #17110d36;font-size:12px;line-height:1.5;text-align:center;padding:11px 17px;border-radius:100px;transition:opacity .25s,transform .35s}
+    .toast.visible{opacity:1;transform:translate(-50%,0)}
+    .theme-panel{display:none;position:absolute;z-index:16;left:18px;right:18px;bottom:118px;pointer-events:auto;text-align:center}
+    .theme-panel.show{display:block;animation:rise .5s var(--ease)}
+    .theme-label{font-size:10px;letter-spacing:.09em;text-shadow:0 1px 5px #332015;margin-bottom:10px;color:#fff0df}
+    .theme-options{display:flex;justify-content:center;gap:7px}
+    .theme-options button{font-size:9px;white-space:nowrap;letter-spacing:.03em;padding:9px 10px;background:#3b2b25be;color:#f4e7d9;border:1px solid #e9d6c65e;border-radius:30px;backdrop-filter:blur(9px)}
+    .theme-options button[aria-pressed=true]{background:#eae2d1;color:#3e2923;border-color:#fff0dc}
+    @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+    .arrow-nudge{display:inline-block;margin-left:6px;animation:moveRight 2.3s ease-in-out infinite}
+    @keyframes moveRight{0%,100%{transform:translateX(0)}50%{transform:translateX(4px)}}
+    .screenreader{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+    @media(max-width:1050px){.layout{grid-template-columns:1fr;gap:0;padding:0}.side{display:none}.experience{height:100svh;max-height:none;width:min(100%,480px);max-width:none;aspect-ratio:auto;border-radius:0;box-shadow:0 0 50px #0009}}
+    @media(max-width:520px){.experience{width:100vw}.hud{padding-left:16px;padding-right:16px}.seal-target{width:42%}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+  </style>
+</head>
+<body>
+  <main class="layout">
+    <aside class="side side--left" aria-hidden="true">
+      <div class="eyebrow">SOLINA SIGNATURE BY WYNDHAM</div>
+      <div class="brand">SOLINA</div><div class="signature">SIGNATURE BY WYNDHAM</div>
+      <div class="fine-line"></div>
+      <h1>The <em>Ambassador</em><br>of Selection</h1>
+      <p>Một lời mời được hé mở qua từng điểm chạm. Chào mừng Quý Đại sứ đến với hành trình của nghệ thuật hiện diện.</p>
+    </aside>
+
+    <section class="experience" id="experience" aria-label="Thiệp mời tương tác The Ambassador of Selection">
+      <section class="scene scene--envelope current" id="scene0" aria-label="Phong bì niêm sáp Solina" aria-hidden="false">
+        <img class="visual" src="assets/frame-1.webp" alt="Phong bì màu cognac với con dấu sáp xanh khói chữ S ánh đồng">
+        <div class="flap" aria-hidden="true"></div><div class="light-sweep" aria-hidden="true"></div>
+        <button class="seal-target" id="sealButton" aria-label="Chạm dấu sáp để mở phong bì"></button>
+      </section>
+      <section class="scene scene--door" id="scene1" aria-label="Cánh cổng Solina thắt nơ xanh" aria-hidden="true">
+        <img class="visual" src="assets/frame-2.webp" alt="Cánh cổng màu xanh khói với hai cửa gỗ nâu và nơ lụa xanh">
+        <button class="bow-target" id="bowButton" aria-label="Chạm chiếc nơ để mở cánh cổng"></button>
+      </section>
+      <section class="scene scene--welcome" id="scene2" aria-label="Thư mời The Ambassador of Selection" aria-hidden="true">
+        <img class="visual" src="assets/frame-3.webp" alt="Thư mời sự kiện 14:00–18:00 ngày 26.11.2026 tại White Palace Phạm Văn Đồng, 588 Phạm Văn Đồng, phường Hiệp Bình, TP. Hồ Chí Minh; dress code xanh trầm, nâu và beige. Hai Đại sứ đứng trước biển dưới vòm xanh.">
+        <div class="light-sweep" aria-hidden="true"></div>
+      </section>
+      <section class="scene scene--welcome-art" id="scene3" aria-label="The Art of Welcome" aria-hidden="true">
+        <img class="visual" src="assets/frame-4.webp" alt="Hai Đại sứ đứng trong backdrop đường cong xanh khói, nền cognac; The Art of Welcome, Check-in & Welcome Drink">
+        <div class="light-sweep" aria-hidden="true"></div>
+      </section>
+      <section class="scene scene--cup" id="scene4" aria-label="Ring for a Surprise" aria-hidden="true">
+        <img class="visual" src="assets/frame-5.webp" alt="Cốc Solina màu ivory có hình vòm biển và dòng Ring for a Surprise, chuông đồng bên cạnh">
+        <button class="bell-target" id="bellButton" aria-label="Rung chuông khám phá chủ đề"></button>
+      </section>
+      <div class="gate-panel" id="gatePanels" aria-hidden="true">
+        <div class="leaf leaf--left"></div><div class="leaf leaf--right"></div>
+      </div>
+      <div class="step-text" id="stepText" aria-hidden="true">01 / 05</div>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+      <div class="theme-panel" id="themePanel" aria-label="Chọn một chủ đề để rung chuông">
+        <div class="theme-label">Chọn một chủ đề và chạm chuông</div>
+        <div class="theme-options" role="group" aria-label="Chủ đề trải nghiệm">
+          <button type="button" data-theme="Recharge" aria-pressed="true">Recharge</button>
+          <button type="button" data-theme="Reconnect" aria-pressed="false">Reconnect</button>
+          <button type="button" data-theme="Rediscover" aria-pressed="false">Rediscover</button>
+        </div>
+      </div>
+      <footer class="hud" id="hud">
+        <div class="instruction" id="instruction">Một lời mời dành riêng cho Quý Đại sứ</div>
+        <div class="bottom-row">
+          <button class="btn btn--icon" id="backButton" aria-label="Quay về cảnh trước" hidden>
+            <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <button class="btn btn--primary" id="nextButton" aria-label="Chạm dấu sáp để mở thư" style="flex:1">CHẠM DẤU SÁP ĐỂ MỞ THƯ <span class="arrow-nudge" aria-hidden="true">›</span></button>
+          <button class="btn btn--icon" id="shareButton" aria-label="Chia sẻ thiệp mời" hidden>
+            <svg viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M5 14v5a2 2 0 002 2h10a2 2 0 002-2v-5"/></svg>
+          </button>
+        </div>
+        <div class="progress" id="progress" aria-label="Tiến độ 1 trên 5"><i class="done"></i><i></i><i></i><i></i><i></i></div>
+      </footer>
+      <p class="screenreader" id="liveDescription" aria-live="polite"></p>
+    </section>
+
+    <aside class="side side--right" aria-hidden="true">
+      <div class="eyebrow">AN EXCLUSIVE INVITATION</div>
+      <div class="right-row"><b>01</b><span>Chạm con dấu sáp và mở phong bì</span></div>
+      <div class="right-row"><b>02</b><span>Tháo dải nơ và bước qua cổng Solina</span></div>
+      <div class="right-row"><b>03</b><span>Khám phá hành trình Đại sứ bằng cách vuốt lên</span></div>
+      <div class="right-row"><b>04</b><span>Chọn một chủ đề và rung chuông</span></div>
+      <div class="fine-line"></div>
+      <p class="side-help">26.11.2026 · 14:00–18:00<br>White Palace Phạm Văn Đồng<br>TP. Hồ Chí Minh</p>
+    </aside>
+  </main>
+  <script>
+    (() => {
+      'use strict';
+      const $ = id => document.getElementById(id);
+      const stage = $('experience');
+      const scenes = Array.from({length:5},(_,i)=>$('scene'+i));
+      const instruction = $('instruction');
+      const nextBtn = $('nextButton');
+      const backBtn = $('backButton');
+      const shareBtn = $('shareButton');
+      const themePanel = $('themePanel');
+      const stepText = $('stepText');
+      const progress = $('progress');
+      const liveDescription = $('liveDescription');
+      let step = 0, busy = false, theme = 'Recharge', toastTimer = null;
+      const strings = [
+        {instruction:'Một lời mời dành riêng cho Quý Đại sứ',button:'CHẠM DẤU SÁP ĐỂ MỞ THƯ',alt:'Phong bì niêm phong'},
+        {instruction:'Cánh cổng đang đón chờ',button:'CHẠM NƠ ĐỂ BƯỚC VÀO',alt:'Cánh cổng thắt nơ'},
+        {instruction:'Vuốt lên để khám phá hành trình',button:'KHÁM PHÁ TIẾP',alt:'Thư mời sự kiện'},
+        {instruction:'The Art of Welcome',button:'TIẾP TỤC HÀNH TRÌNH',alt:'Không gian Đại sứ'},
+        {instruction:'Ring for a Surprise',button:'BẮT ĐẦU LẠI',alt:'Chiếc cốc Solina'}
+      ];
+      function setActive(index) {
+        scenes.forEach((s,i)=>{
+          s.classList.toggle('current',i===index);
+          s.classList.remove('underlay','leaving-up','leaving-down','entering-up','entering-down','open-envelope');
+          s.setAttribute('aria-hidden',i===index?'false':'true');
+        });
+        stage.classList.remove('envelope-opening','gate-opening');
+        step=index;
+        updateUI();
+      }
+      function updateUI(){
+        const item = strings[step];
+        instruction.textContent=item.instruction;
+        nextBtn.innerHTML=item.button+' <span class="arrow-nudge" aria-hidden="true">›</span>';
+        nextBtn.setAttribute('aria-label',item.button);
+        backBtn.hidden=step===0;
+        shareBtn.hidden=step!==4;
+        themePanel.classList.toggle('show',step===4);
+        stepText.textContent=String(step+1).padStart(2,'0')+' / 05';
+        stepText.classList.toggle('show',step!==0);
+        progress.setAttribute('aria-label',`Tiến độ ${step+1} trên 5`);
+        [...progress.children].forEach((el,i)=>el.classList.toggle('done',i<=step));
+        liveDescription.textContent=item.alt;
+      }
+      function pause(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
+      function reduced(){return window.matchMedia('(prefers-reduced-motion: reduce)').matches;}
+      function toast(message){
+        const el=$('toast');clearTimeout(toastTimer);el.textContent=message;
+        el.classList.add('visible');toastTimer=setTimeout(()=>el.classList.remove('visible'),2500);
+      }
+      async function next(){
+        if(busy)return;
+        if(step===4){setActive(0);return;}
+        busy=true;
+        if(step===0){
+          const old=scenes[0], next=scenes[1];
+          next.classList.add('underlay');next.setAttribute('aria-hidden','false');
+          stage.classList.add('envelope-opening');
+          old.classList.add('open-envelope');
+          if(!reduced())await pause(1200);
+          setActive(1);
+        }else if(step===1){
+          const old=scenes[1], next=scenes[2];
+          next.classList.add('underlay');next.setAttribute('aria-hidden','false');
+          stage.classList.add('gate-opening');
+          if(!reduced())await pause(2030);
+          setActive(2);
+        }else{
+          const old=scenes[step], next=scenes[step+1];
+          next.classList.add('underlay');next.setAttribute('aria-hidden','false');
+          old.classList.remove('current');old.classList.add('leaving-up');
+          if(!reduced())await pause(760);
+          setActive(step+1);
+        }
+        busy=false;
+      }
+      async function prev(){
+        if(busy||step===0)return;
+        busy=true;
+        const old=scenes[step], next=scenes[step-1];
+        next.classList.add('underlay');next.setAttribute('aria-hidden','false');
+        old.classList.remove('current');old.classList.add('leaving-down');
+        if(!reduced())await pause(740);
+        setActive(step-1);
+        busy=false;
+      }
+      $('sealButton').addEventListener('click',next);
+      $('bowButton').addEventListener('click',next);
+      nextBtn.addEventListener('click',next);
+      backBtn.addEventListener('click',prev);
+      $('bellButton').addEventListener('click',()=>{
+        if(step!==4||busy)return;
+        const cup=scenes[4];cup.classList.remove('ringing');void cup.offsetWidth;cup.classList.add('ringing');
+        toast(`Chuông đã ngân · ${theme}`);
+        window.setTimeout(()=>cup.classList.remove('ringing'),820);
+      });
+      themePanel.querySelectorAll('button[data-theme]').forEach(button=>{
+        button.addEventListener('click',()=>{
+          theme=button.dataset.theme;
+          themePanel.querySelectorAll('button[data-theme]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
+          toast(`Đã chọn ${theme} · Chạm chuông để tiếp tục`);
+        });
+      });
+      shareBtn.addEventListener('click',async()=>{
+        try{
+          if(navigator.share){await navigator.share({title:document.title,url:location.href});}
+          else if(navigator.clipboard){await navigator.clipboard.writeText(location.href);toast('Đã sao chép liên kết thiệp mời');}
+          else toast('Sử dụng nút chia sẻ của trình duyệt');
+        }catch(e){if(e.name!=='AbortError')toast('Không thể chia sẻ trên trình duyệt này');}
+      });
+      let touchStart=null,lastWheel=0;
+      stage.addEventListener('touchstart',e=>{
+        if(e.target.closest('button'))return;
+        touchStart={x:e.changedTouches[0].clientX,y:e.changedTouches[0].clientY};
+      },{passive:true});
+      stage.addEventListener('touchend',e=>{
+        if(!touchStart||busy||step<=1)return;
+        const dy=e.changedTouches[0].clientY-touchStart.y;
+        const dx=e.changedTouches[0].clientX-touchStart.x;
+        touchStart=null;
+        if(Math.abs(dy)>52 && Math.abs(dy)>Math.abs(dx)*1.2){dy<0?next():prev();}
+      },{passive:true});
+      stage.addEventListener('wheel',e=>{
+        e.preventDefault();
+        if(busy||step<=1||Math.abs(e.deltaY)<10||Date.now()-lastWheel<900)return;
+        lastWheel=Date.now();e.deltaY>0?next():prev();
+      },{passive:false});
+      document.addEventListener('keydown',e=>{
+        if(e.target.tagName==='BUTTON' && (e.key===' '||e.key==='Enter'))return;
+        if(['ArrowDown','ArrowRight','PageDown',' '].includes(e.key)){
+          e.preventDefault();next();
+        }else if(['ArrowUp','ArrowLeft','PageUp'].includes(e.key)){
+          e.preventDefault();prev();
+        }
+      });
+      setActive(0);
+      // Bring the next image into cache while the guest is reading the current scene.
+      if('requestIdleCallback' in window){requestIdleCallback(()=>{for(let i=3;i<=5;i++){const img=new Image();img.src=`assets/frame-${i}.webp`;}});}
+    })();
+  </script>
+</body>
+</html>
