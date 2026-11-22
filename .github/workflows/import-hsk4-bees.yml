@@ -24,15 +24,8 @@ jobs:
           curl --fail --location --silent --show-error --retry 3 --max-time 90 "https://media.canva.com/v2/image-resize/format:PNG/height:150/quality:100/uri:ifs%3A%2F%2FM%2F517d7589-3336-4182-b255-39a4e755538e/watermark:F/width:150?csig=AAAAAAAAAAAAAAAAAAAAAPwQLlvqjHLY_CHIE2xtojlg5zVS4lDx3f246vBNUK7n&exp=1795376179&osig=AAAAAAAAAAAAAAAAAAAAAM0k2uX0bm8Uz2lbuNB_3zzPiSrLVdeB9-n_mdkLYoqg&signer=media-rpc&token=AAIAAU0AJDUxN2Q3NTg5LTMzMzYtNDE4Mi1iMjU1LTM5YTRlNzU1NTM4ZQAAAAABogTCZzh-ivb-BHes1Yo2N6hMQZRn-XkjGGY17ajhVX0UJVELSQ&x-canva-quality=thumbnail" -o hsk4/assets/bee-serious.png
           curl --fail --location --silent --show-error --retry 3 --max-time 90 "https://media.canva.com/v2/image-resize/format:PNG/height:150/quality:100/uri:ifs%3A%2F%2FM%2Feb5fe4b7-bd59-4f6b-9263-6653559754ac/watermark:F/width:150?csig=AAAAAAAAAAAAAAAAAAAAAFeJ4TAU5BGt3EJ8CQH55EXHMHkrwadvJozYuRS8cbMI&exp=1795378271&osig=AAAAAAAAAAAAAAAAAAAAAOeMUoAOziWns5By2TpwUwK9-6ftLzbhWyAlRCjYfSiH&signer=media-rpc&token=AAIAAU0AJGViNWZlNGI3LWJkNTktNGY2Yi05MjYzLTY2NTM1NTk3NTRhYwAAAAABogTiUxhZJ9WTVzZbSwdeqXQ0p3N3NNeTJCiSDWjYj2hsqyNumw&x-canva-quality=thumbnail" -o hsk4/assets/bee-wink.png
           file hsk4/assets/bee-*.png
-          python3 - <<'PY'
-          from PIL import Image
-          from pathlib import Path
-          for p in Path('hsk4/assets').glob('bee-*.png'):
-              with Image.open(p) as im:
-                  assert im.size[0]>=140 and im.size[1]>=140, f"Invalid mascot dimensions: {p}"
-                  im.verify()
-          print("Verified 6 cropped bee mascot images")
-          PY
+          test "$(find hsk4/assets -type f -name 'bee-*.png' | wc -l)" -eq 6
+          test "$(file hsk4/assets/bee-*.png | grep -c '150 x 150')" -eq 6
       - name: Commit permanent public mascot assets
         shell: bash
         run: |
