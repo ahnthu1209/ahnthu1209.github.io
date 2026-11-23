@@ -27,6 +27,12 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      - name: Verify public site content
+        run: |
+          test -f index.html
+          test -f solina-darkroom/index.html
+          echo 'Portfolio and Solina Darkroom files are ready for GitHub Pages.'
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
