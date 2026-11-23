@@ -1,5 +1,5 @@
 import {enableAvatar} from './avatar.js?v=8';
-import {createPrintScene} from './print-scene.js?v=7';
+import {createPrintScene} from './print-scene.js?v=9';
 import {createPanoramaView} from './panorama.js?v=6';
 import {vertexShader, fragmentShader} from './surfaces.js?v=6';
 
@@ -304,6 +304,8 @@ async function start() {
     }
 
     const still=node('fallback-print');
+    const hand=node('fallback-hand');
+    const clip=node('fallback-clip');
     const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
     const animation=(phase,ms,callback)=>{
       return new Promise(resolve=>{
@@ -323,8 +325,36 @@ async function start() {
     };
     function resetPrint(){
       display.workshop?.reset();
-      still.hidden=true;
+      still.hidden=hand.hidden=clip.hidden=true;
       still.removeAttribute('src');
+    }
+    function fallbackFrame(phase,t){
+      const pan=phase==='dip'||phase==='lift';
+      const landscape=stage.clientWidth/stage.clientHeight>=1;
+      const blend=(a,b,k)=>a+(b-a)*k;
+      const clamp=v=>Math.min(1,Math.max(v,0));
+      const smooth=v=>v*v*(3-2*v);
+      const d=pan?(phase==='dip'?smooth(clamp(t/.34)):1-smooth(t)):0;
+      const k=pan?0:phase==='hang'?smooth(clamp(t/.61)):1;
+      const w=landscape?(pan?22:19):(pan?34:32);
+      const x=pan?57:landscape?53:50;
+      const y=pan?blend(53,65,d):blend(62,48,k);
+      const safe=pan?d:1-k;
+      still.style.setProperty('--sheet-x',x+'%');
+      still.style.setProperty('--sheet-y',y+'%');
+      still.style.setProperty('--sheet-w',w+'%');
+      still.style.setProperty('--sheet-roll',blend(1,-6,safe)+'deg');
+      still.style.setProperty('--sheet-tilt',(pan?blend(38,67,d):blend(19,0,k))+'deg');
+      const topMeasure=(w*stage.clientWidth/stage.clientHeight)*.47;
+      const handOffset=pan?0:smooth(clamp((t-.61)/.39));
+      hand.hidden=phase==='reveal'||handOffset>.98;
+      hand.style.setProperty('--hand-x',(x+w*.31+handOffset*16)+'%');
+      hand.style.setProperty('--hand-y',(y-topMeasure*(pan?.49:1)+handOffset*9)+'%');
+      hand.style.setProperty('--hand-w',(landscape?30:42)+'%');
+      hand.style.setProperty('--hand-roll',blend(-20,-6,safe)+'deg');
+      clip.hidden=pan||k<.78;
+      clip.style.setProperty('--sheet-x',x+'%');
+      clip.style.setProperty('--clip-y',Math.max(14,y-topMeasure)+'%');
     }
     const director={
       async wash(ghost,cue){
@@ -345,10 +375,11 @@ async function start() {
             cue('Đang kẹp ảnh lên dây');
             await animate('hang',1250);
           } else {
-            await pause(2200);
+            await animation('dip',2200,t=>fallbackFrame('dip',t));
+            await animation('lift',700,t=>fallbackFrame('lift',t));
             setPosition('prints');
             cue('Đang kẹp ảnh lên dây');
-            await pause(950);
+            await animation('hang',1250,t=>fallbackFrame('hang',t));
           }
           cue('Chờ ảnh hiện màu');
           await pause(1500);
@@ -369,6 +400,7 @@ async function start() {
           } else {
             still.hidden=false;
             still.src=portrait.toDataURL();
+            fallbackFrame('reveal',1);
             if(!reduced.matches)still.animate([{opacity:.3},{opacity:1}],{duration:700});
             await pause(700);
           }

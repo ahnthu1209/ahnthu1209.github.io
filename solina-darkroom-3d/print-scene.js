@@ -10,7 +10,7 @@ export function createPrintScene(T,scene) {
     const m=new T.Mesh(geo,mat);parent.add(m);return m;
   };
   const tray=new T.Vector3(1.065,.972,.906);
-  const hanger=new T.Vector3(.335,1.538,-2.565);
+  const hanger=new T.Vector3(.335,1.551,-2.565);
   const length=.345;
   const rotor=new T.Group();
   group.add(rotor);

@@ -9,8 +9,8 @@
   <title>Phòng tối Solina · Trải nghiệm 3D</title>
   <link rel="stylesheet" href="./style.css">
   <link rel="preload" href="./phong-toi-gallery.webp" as="image">
-  <link rel="stylesheet" href="./avatar.css?v=7">
-  <script type="module" src="./viewer.js?v=8"></script>
+  <link rel="stylesheet" href="./avatar.css?v=9">
+  <script type="module" src="./viewer.js?v=9"></script>
 </head>
 <body>
   <main>
@@ -30,6 +30,8 @@
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5"/></svg>
         </button>
         <p class="print-cue" id="print-cue" role="status" hidden></p>
+        <img class="fallback-hand" id="fallback-hand" src="./bo-anh/gang-den.webp" alt="" hidden>
+        <span class="fallback-clip" id="fallback-clip" aria-hidden="true" hidden></span>
         <img id="fallback-print" class="fallback-print" alt="Ảnh đang được tráng" hidden>
       </div>
       <div class="controls" id="controls" hidden>
