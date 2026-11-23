@@ -1,4 +1,4 @@
-import {portraitMask,refineAlpha,removeEdgeColor} from './matte.js?v=12';
+import {portraitMask,refineAlpha,removeEdgeColor} from './matte.js?v=13';
 let model;
 const canvas=(w,h=w)=>Object.assign(document.createElement('canvas'),{width:w,height:h});
 const context=(surface,options)=>surface.getContext('2d',options);
@@ -60,17 +60,25 @@ async function alternativeMask(surface){
   let segmenter;
   try {segmenter=await model;}
   catch {throw new Error('Chưa tải được bộ tách nền. Hãy thử lại hoặc chọn PNG đã tách nền.');}
-  const mask=canvas(512),brush=context(mask);
-  brush.drawImage(surface,0,0,512,512);
-  const result=await segmenter.segmentPerson(mask,{internalResolution:'high',segmentationThreshold:.77,maxDetections:1,scoreThreshold:.25,nmsRadius:20});
-  const data=brush.createImageData(512,512);
-  for(let i=0;i<result.data.length;i++) data.data[i*4+3]=result.data[i]*255;
+  // Do not force portrait or couple photos into a square: stretching a person
+  // before segmentation makes shoes, arms and dress hems disappear.
+  const ratio=Math.min(1,640/Math.max(surface.width,surface.height));
+  const width=Math.max(64,Math.round(surface.width*ratio));
+  const height=Math.max(64,Math.round(surface.height*ratio));
+  const mask=canvas(width,height),brush=context(mask);
+  brush.drawImage(surface,0,0,width,height);
+  const result=await segmenter.segmentPerson(mask,{
+    internalResolution:'full',segmentationThreshold:.55,
+    maxDetections:3,scoreThreshold:.20,nmsRadius:20
+  });
+  const data=brush.createImageData(width,height);
+  for(let i=0;i<result.data.length;i++)data.data[i*4+3]=result.data[i]*255;
   brush.putImageData(data,0,0);
-  const softened=canvas(512),edge=context(softened);
-  edge.filter='blur(.85px)';
+  const softened=canvas(width,height),edge=context(softened);
+  edge.filter='blur(.7px)';
   edge.drawImage(mask,0,0);
-  const rgb=edge.getImageData(0,0,512,512).data;
-  return {width:512,height:512,alpha:Float32Array.from(result.data,(_,i)=>rgb[i*4+3]/255)};
+  const pixels=edge.getImageData(0,0,width,height).data;
+  return {width,height,alpha:Float32Array.from(result.data,(_,i)=>pixels[i*4+3]/255)};
 }
 
 function applyMask(ctx,surface,pixels,mask){
