@@ -1,4 +1,4 @@
-import {portraitFrom,styles,previewGhost,compose,frameFor,portraitRect} from './portrait.js?v=12';
+import {portraitFrom,styles,previewGhost,compose,frameFor,portraitRect} from './portrait.js?v=13';
 
 const api='https://solina-so-giam-tuyen.ahnthu1209.chatgpt.site/api/issue';
 const get=id=>document.getElementById(id);
@@ -154,7 +154,7 @@ export function enableAvatar(director){
     const rect=portraitRect(subject,index,adjust);
     const x=((event.clientX-area.left)*1000/area.width-rect.x)/rect.scale;
     const y=((event.clientY-area.top)*1000/area.height-rect.y)/rect.scale;
-    const brush=subject.getContext('2d'), radius=Math.max(2,5*1000/area.width/rect.scale);
+    const brush=subject.getContext('2d'), radius=Math.max(1.5,2.7*1000/area.width/rect.scale);
     brush.save();
     brush.globalCompositeOperation='destination-out';
     brush.beginPath();brush.lineWidth=radius*2;brush.lineCap='round';
