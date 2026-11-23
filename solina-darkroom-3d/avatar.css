@@ -32,7 +32,8 @@
 .avatar-actions:has(> :not([hidden])) { min-height:42px; }
 .avatar-actions:not(:has(> :not([hidden]))) { display:none; }
 .portrait-panel[data-step=upload] .avatar-actions, .portrait-panel[data-step=retry] .avatar-actions { justify-content:center; }
-#result-number { color:var(--gold); font-size:.84rem; margin:.6rem 0 .45rem; }
+#result-number { display:grid; justify-items:end; width:max-content; margin:.6rem 0 .45rem auto; color:var(--gold); font-size:.84rem; }
+#result-digits { font-variant-numeric:tabular-nums; }
 .result-caption { border-top:1px solid #5f4e3a; padding-top:.55rem; }
 #result-caption { margin:0 0 .45rem; white-space:pre-line; color:var(--ink); font-size:1rem; line-height:1.38; }
 #copy-caption { background:transparent; padding:.4rem .68rem; min-height:34px; font-size:.85rem; }
@@ -71,4 +72,4 @@
 .edge-editor { display:flex; flex-wrap:wrap; gap:6px; margin:.4rem 0; }
 .edge-editor button { min-height:34px; font-size:.82rem; padding:.34rem .58rem; }
 .edge-editor [aria-pressed=true] { border-color:var(--gold); background:#4a3826; }
-#portrait-preview.erasing { cursor:crosshair; touch-action:none; }
+#portrait-preview.editing-edge { cursor:crosshair; touch-action:none; }

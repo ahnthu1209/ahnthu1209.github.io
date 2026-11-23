@@ -1,4 +1,4 @@
-import {portraitFrom,styles,previewGhost,compose,frameFor,portraitRect} from './portrait.js?v=13';
+import {portraitFrom,styles,previewGhost,compose,frameFor,portraitRect} from './portrait.js?v=14';
 
 const api='https://solina-so-giam-tuyen.ahnthu1209.chatgpt.site/api/issue';
 const get=id=>document.getElementById(id);
@@ -92,10 +92,11 @@ export function enableAvatar(director){
   const panel=get('portrait-panel'), picker=get('portrait-file'), choices=get('frame-choices');
   const status=get('portrait-status'), cue=get('print-cue'), preview=get('portrait-preview');
   const adjustFields=['x','y','zoom'].map(key=>get('adjust-'+key));
-  let subject, index=0, adjust=defaults(), record, readyImage;
+  let subject, original, index=0, adjust=defaults(), record, readyImage;
   let working=false, awaitingNumber=false, busyFile=false, renderKey=0, downloadURL;
   let captionReset, edgeOriginal, stroke, pendingFrame;
-  const erase=get('erase-edge'), undo=get('undo-edge');
+  const erase=get('erase-edge'), restore=get('restore-edge'), undo=get('undo-edge');
+  let edgeMode;
   const buttons=styles.map((style,i)=>{
     const button=document.createElement('button');
     button.type='button';button.className='sample';
@@ -136,14 +137,18 @@ export function enableAvatar(director){
   adjustFields.forEach(input=>input.addEventListener('input',()=>{
     adjust[input.id.slice(7)]=Number(input.value);select();
   }));
-  function setErasing(enabled){
-    erase.setAttribute('aria-pressed',String(enabled));
-    preview.classList.toggle('erasing',enabled);
-    get('erase-hint').hidden=!enabled;
-    if(!enabled)stroke=null;
+  function setEdgeMode(mode){
+    edgeMode=mode;
+    erase.setAttribute('aria-pressed',String(mode==='erase'));
+    restore.setAttribute('aria-pressed',String(mode==='restore'));
+    preview.classList.toggle('editing-edge',Boolean(mode));
+    const hint=get('erase-hint');
+    hint.hidden=!mode;
+    hint.textContent=mode==='restore'?'Tô lên phần người bị mất để lấy lại chi tiết từ ảnh gốc.':'Kéo nhẹ trên phần nền còn sót trong ảnh xem trước.';
+    stroke=null;
   }
   function stopErasing(){
-    setErasing(false);
+    setEdgeMode(null);
     if(pendingFrame){cancelAnimationFrame(pendingFrame);pendingFrame=undefined;}
   }
   function freshEdges(){
@@ -155,25 +160,49 @@ export function enableAvatar(director){
     const x=((event.clientX-area.left)*1000/area.width-rect.x)/rect.scale;
     const y=((event.clientY-area.top)*1000/area.height-rect.y)/rect.scale;
     const brush=subject.getContext('2d'), radius=Math.max(1.5,2.7*1000/area.width/rect.scale);
-    brush.save();
-    brush.globalCompositeOperation='destination-out';
-    brush.beginPath();brush.lineWidth=radius*2;brush.lineCap='round';
-    brush.moveTo(from?.x??x,from?.y??y);brush.lineTo(x+.001,y+.001);brush.stroke();brush.restore();
+    const startX=from?.x??x, startY=from?.y??y;
+    const drawStroke=(ctx,left=0,top=0)=>{
+      ctx.beginPath();ctx.lineWidth=radius*2;ctx.lineCap='round';
+      ctx.moveTo(startX-left,startY-top);
+      ctx.lineTo(x-left+.001,y-top+.001);
+      ctx.stroke();
+    };
+    if(edgeMode==='restore'){
+      const left=Math.max(0,Math.floor(Math.min(x,startX)-radius-1));
+      const top=Math.max(0,Math.floor(Math.min(y,startY)-radius-1));
+      const right=Math.min(subject.width,Math.ceil(Math.max(x,startX)+radius+1));
+      const bottom=Math.min(subject.height,Math.ceil(Math.max(y,startY)+radius+1));
+      if(right>left&&bottom>top){
+        const patch=Object.assign(document.createElement('canvas'),{width:right-left,height:bottom-top});
+        const ctx=patch.getContext('2d');
+        drawStroke(ctx,left,top);
+        ctx.globalCompositeOperation='source-in';
+        ctx.drawImage(original,-left,-top);
+        brush.drawImage(patch,left,top);
+      }
+    } else {
+      brush.save();
+      brush.globalCompositeOperation='destination-out';
+      drawStroke(brush);
+      brush.restore();
+    }
     get('wash-photo').disabled=true;
     if(!pendingFrame)pendingFrame=requestAnimationFrame(()=>{pendingFrame=undefined;select();});
     return {x,y};
   }
-  erase.onclick=()=>setErasing(erase.getAttribute('aria-pressed')!=='true');
+  erase.onclick=()=>setEdgeMode(edgeMode==='erase'?null:'erase');
+  restore.onclick=()=>setEdgeMode(edgeMode==='restore'?null:'restore');
   undo.onclick=()=>{
     if(!edgeOriginal)return;
     subject=edgeOriginal;freshEdges();select();
   };
   preview.addEventListener('pointerdown',event=>{
-    if(!subject||readyImage||working||erase.getAttribute('aria-pressed')!=='true'||event.button!==0)return;
+    if(!subject||readyImage||working||!edgeMode||event.button!==0)return;
     event.preventDefault();
     if(!edgeOriginal){
       edgeOriginal=Object.assign(document.createElement('canvas'),{width:subject.width,height:subject.height});
       edgeOriginal.getContext('2d').drawImage(subject,0,0);
+      edgeOriginal.portraitBounds=subject.portraitBounds;
       undo.disabled=false;
     }
     preview.setPointerCapture(event.pointerId);
@@ -193,6 +222,7 @@ export function enableAvatar(director){
     preview.parentElement.classList.toggle('finished',!!readyImage);
     get('wash-photo').hidden=!!readyImage;
     get('adjustments').hidden=!!readyImage;
+    restore.hidden=!original;
     get('portrait-intro').hidden=!!subject||!!readyImage||working;
     get('restart-photo').hidden=(!subject&&!readyImage)||working||awaitingNumber;
     get('download-photo').hidden=!readyImage;
@@ -208,7 +238,7 @@ export function enableAvatar(director){
     const link=get('download-photo');
     link.href=downloadURL;
     link.download='SOLINA-Giam-Tuyen-'+number+'.png';
-    get('result-number').textContent='# Giám tuyển '+number;
+    get('result-digits').textContent=number;
     get('result-caption').textContent=captions[style]||'';
     get('copy-caption').textContent='Sao chép caption';
     tell('');
@@ -237,7 +267,7 @@ export function enableAvatar(director){
     try {
       await frameFor(index);
       if(!resume){
-        if(!record?.ticket)record={ticket:newTicket(),style:index,adjust:{...adjust},subject:await toBlob(subject)};
+        if(!record?.ticket)record={ticket:newTicket(),style:index,adjust:{...adjust},bounds:subject.portraitBounds,subject:await toBlob(subject)};
         await saved(record);
         await director.wash(previewGhost(subject,index,adjust),setCue);
       }
@@ -265,7 +295,7 @@ export function enableAvatar(director){
       tell('Đang mở ảnh…');
       await delay(32);
       const photo=await portraitFrom(file,tell);
-      freshEdges();subject=photo;record=null;readyImage=null;index=0;adjust=defaults();updateSliders();
+      freshEdges();subject=photo.subject;original=photo.original;record=null;readyImage=null;index=0;adjust=defaults();updateSliders();
       await saved(null);
       setCue('');
       tell('');refreshPanel();
@@ -283,6 +313,7 @@ export function enableAvatar(director){
     if(!record?.subject||working) return;
     try {
       subject=restoreCanvas(await createImageBitmap(record.subject));
+      subject.portraitBounds=record.bounds;
       index=record.style;adjust=record.adjust;updateSliders();
       await wash();
     } catch(error) {
@@ -292,7 +323,7 @@ export function enableAvatar(director){
   get('restart-photo').onclick=async()=>{
     if(working)return;
     if(downloadURL){URL.revokeObjectURL(downloadURL);downloadURL=null;}
-    freshEdges();record=null;readyImage=null;subject=null;index=0;adjust=defaults();
+    freshEdges();record=null;readyImage=null;subject=null;original=null;index=0;adjust=defaults();
     director.reset();updateSliders();refreshPanel();
     tell('');setCue('');
     await saved(null);

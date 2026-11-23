@@ -1,4 +1,4 @@
-import {enableAvatar} from './avatar.js?v=13';
+import {enableAvatar} from './avatar.js?v=14';
 import {createPrintScene} from './print-scene.js?v=11';
 import {createPanoramaView} from './panorama.js?v=6';
 import {vertexShader, fragmentShader} from './surfaces.js?v=6';
@@ -9,6 +9,7 @@ const viewport = node('view');
 const enter = node('enter');
 const status = node('status');
 const gate = node('gate');
+const gateLeaf = gate.querySelector('.gate-leaf');
 const experience=gate.parentElement;
 const play = node('play');
 const progress = node('progress');
@@ -178,7 +179,6 @@ async function start() {
   // Prepare the scene before moving the gate so it never hangs half-open
   // while large 3D assets are still downloading.
   const reduced=matchMedia('(prefers-reduced-motion: reduce)');
-  const waiting=ms=>new Promise(resolve=>setTimeout(resolve,reduced.matches?0:ms));
   const notice=setTimeout(()=>{status.textContent='Đang chuẩn bị phòng 3D…';},650);
   try {
     const canvas=document.createElement('canvas');
@@ -405,12 +405,14 @@ async function start() {
     stage.classList.add('ready');
     clearTimeout(notice);
     status.textContent='';
+    // Flush the closed transform before revealing the animated door layer.
+    getComputedStyle(gateLeaf).transform;
     gate.classList.add('opening');
-    await waiting(720);
-    clearTimeout(notice);
-    status.textContent='';
+    getComputedStyle(gateLeaf).transform;
+    await Promise.allSettled(gateLeaf.getAnimations().map(animation=>animation.finished));
     gate.classList.add('passing');
-    await waiting(520);
+    getComputedStyle(gate).opacity;
+    await Promise.allSettled(gate.getAnimations({subtree:true}).map(animation=>animation.finished));
     gate.hidden=true;
     viewport.inert=false;
     node('controls').hidden=false;

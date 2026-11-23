@@ -77,14 +77,12 @@ export function refineAlpha(alpha,width,height) {
   if(!components.length||components[0].count<size*.005)
     throw new Error('Chưa tìm thấy chân dung rõ.');
   const primary=components[0].count;
-  // Retain up to three substantial figures/components (including couples).
-  // Tiny disconnected background specks still get rejected.
+  // Keep smaller foreground components such as separate hands or shoes.
   const allowed=new Uint8Array(components.length+1);
   let kept=0;
   for(const part of components){
-    if(kept>=5)break;
-    if(part.count<Math.max(size*.0018,primary*.055))continue;
-    if(part.strong<Math.max(20,part.count*.06))continue;
+    if(part.count<Math.max(12,size*.00015,primary*.005))break;
+    if(part.strong<Math.max(6,part.count*.035))continue;
     allowed[part.label]=1;kept++;
   }
   if(!kept)allowed[components[0].label]=1;
@@ -106,6 +104,27 @@ export function refineAlpha(alpha,width,height) {
       clean[i]=Math.min(.30,alpha[i]*1.7);
     }
   }
+  // Close tiny enclosed holes from low-confidence pixels on clothing.
+  // Leave larger openings, such as the gap between an arm and the torso.
+  const maxHole=Math.max(9,Math.round(size*.00018));
+  for(let i=0;i<size;i++){
+    if(clean[i]>=.35||labels[i]===-1)continue;
+    let read=0,write=1,atEdge=false;
+    queue[0]=i;labels[i]=-1;
+    function visit(j){
+      if(clean[j]<.35&&labels[j]!==-1){labels[j]=-1;queue[write++]=j;}
+    }
+    while(read<write){
+      const at=queue[read++],x=at%width;
+      if(x>0)visit(at-1);else atEdge=true;
+      if(x<width-1)visit(at+1);else atEdge=true;
+      if(at>=width)visit(at-width);else atEdge=true;
+      if(at+width<size)visit(at+width);else atEdge=true;
+    }
+    if(!atEdge&&write<=maxHole){
+      for(let j=0;j<write;j++)clean[queue[j]]=1;
+    }
+  }
   return clean;
 }
 
@@ -115,7 +134,8 @@ export function removeEdgeColor(pixels,alpha,width,height) {
   for(let y=0;y<height;y++)for(let x=0;x<width;x++){
     const offset=(y*width+x)*4;
     const a=alpha[offset+3]/255;
-    if(a<=.08||a>=.72){pixels[offset+3]=alpha[offset+3];continue;}
+    pixels[offset+3]*=a;
+    if(a<=.08||a>=.72)continue;
     const sum=[0,0,0]; let count=0;
     for(const [dx,dy] of rays){
       for(let step=radius;step<=radius*4;step+=radius){
@@ -135,7 +155,6 @@ export function removeEdgeColor(pixels,alpha,width,height) {
         pixels[offset+n]+=Math.min(18,Math.max(-18,correction));
       }
     }
-    pixels[offset+3]=alpha[offset+3];
   }
 }
 

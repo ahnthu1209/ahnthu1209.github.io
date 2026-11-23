@@ -1,4 +1,4 @@
-import {portraitMask,refineAlpha,removeEdgeColor} from './matte.js?v=13';
+import {portraitMask,refineAlpha,removeEdgeColor} from './matte.js?v=14';
 let model;
 const canvas=(w,h=w)=>Object.assign(document.createElement('canvas'),{width:w,height:h});
 const context=(surface,options)=>surface.getContext('2d',options);
@@ -34,25 +34,34 @@ export async function portraitFrom(file,notify) {
   try {bitmap=await createImageBitmap(file,{imageOrientation:'from-image'});}
   catch {throw new Error('Hãy chọn ảnh JPG, PNG hoặc WebP mà trình duyệt có thể mở.');}
   const scale=Math.min(1,1600/Math.max(bitmap.width,bitmap.height));
-  const surface=canvas(Math.round(bitmap.width*scale),Math.round(bitmap.height*scale));
+  const surface=canvas(Math.max(1,Math.round(bitmap.width*scale)),Math.max(1,Math.round(bitmap.height*scale)));
   const ctx=context(surface,{willReadFrequently:true});
   ctx.drawImage(bitmap,0,0,surface.width,surface.height);
   bitmap.close();
   const pixels=ctx.getImageData(0,0,surface.width,surface.height);
-  let transparent=false;
-  for(let i=3;i<pixels.data.length;i+=32){if(pixels.data[i]<25){transparent=true;break;}}
+  let transparentPixels=0;
+  for(let i=3;i<pixels.data.length;i+=4) {
+    if(pixels.data[i]<25)transparentPixels++;
+  }
+  const transparent=transparentPixels>surface.width*surface.height*.03;
+  let original=null;
   if(!transparent) {
     notify('Đang tách nền chân dung…');
-    let mask;
+    original=canvas(surface.width,surface.height);
+    context(original).drawImage(surface,0,0);
     try {
-      mask=await portraitMask(surface,script);
-    } catch(error){
+      applyMask(ctx,surface,pixels,await portraitMask(original,script));
+      surface.portraitBounds=portraitBounds(surface);
+    } catch(error) {
       console.warn('Đang chuyển bộ tách nền',error);
-      mask=await alternativeMask(surface);
+      const mask=await alternativeMask(original);
+      ctx.clearRect(0,0,surface.width,surface.height);
+      ctx.drawImage(original,0,0);
+      applyMask(ctx,surface,ctx.getImageData(0,0,surface.width,surface.height),mask);
     }
-    applyMask(ctx,surface,pixels,mask);
   }
-  return cropPortrait(surface);
+  surface.portraitBounds??=portraitBounds(surface);
+  return {subject:surface,original};
 }
 
 async function alternativeMask(surface){
@@ -97,19 +106,17 @@ function applyMask(ctx,surface,pixels,mask){
   ctx.putImageData(pixels,0,0);
 }
 
-function cropPortrait(surface){
+function portraitBounds(surface){
   const {width,height}=surface;
   const rgba=context(surface).getImageData(0,0,width,height).data;
   let l=width,r=0,t=height,b=0,area=0;
   for(let y=0;y<height;y+=2) for(let x=0;x<width;x+=2){
     if(rgba[(y*width+x)*4+3]>116){l=Math.min(l,x);r=Math.max(r,x);t=Math.min(t,y);b=Math.max(b,y);area++;}
   }
-  if(area<width*height*.008 || r-l<38 || b-t<60) throw new Error('Chưa tìm thấy chân dung rõ. Bạn thử chọn ảnh sáng hơn có một người.');
+  if(area<width*height*.0015 || r-l<12 || b-t<16) throw new Error('Chưa tìm thấy chân dung rõ. Bạn thử chọn ảnh sáng hơn có một người.');
   const pad=10;
   l=Math.max(0,l-pad);t=Math.max(0,t-pad);r=Math.min(width,r+pad);b=Math.min(height,b+pad);
-  const result=canvas(r-l,b-t);
-  context(result).drawImage(surface,l,t,result.width,result.height,0,0,result.width,result.height);
-  return result;
+  return {x:l,y:t,width:r-l,height:b-t};
 }
 
 export const styles=[
@@ -136,9 +143,12 @@ export function frameFor(index) {
 
 export function portraitRect(subject,index,adjust,size=1000){
   const style=styles[index];
-  const scale=Math.min(size*style.height/subject.height,size*style.maxWidth/subject.width)*adjust.zoom;
-  const w=subject.width*scale,h=subject.height*scale;
-  return {x:(style.x+adjust.x)*size-w/2,y:(style.top+adjust.y)*size,w,h,scale};
+  const bounds=subject.portraitBounds??{x:0,y:0,width:subject.width,height:subject.height};
+  const availableHeight=Math.min(style.height,1-style.top);
+  const scale=Math.min(size*availableHeight/bounds.height,size*style.maxWidth/bounds.width)*adjust.zoom;
+  const x=(style.x+adjust.x)*size-(bounds.x+bounds.width/2)*scale;
+  const y=(style.top+adjust.y)*size-bounds.y*scale;
+  return {x,y,w:subject.width*scale,h:subject.height*scale,scale};
 }
 
 function drawPortrait(ctx,subject,index,adjust,size,ghost=false){
@@ -180,9 +190,10 @@ export async function compose(subject,index,adjust,number){
   if(number) {
     const digits=[...number].map(n=>type.digits[Number(n)]);
     const width=digits.reduce((sum,d)=>sum+(d[2]+type.spacing)*type.scale,0)-type.spacing*type.scale;
-    let x=type.align==='end'?type.x-width:type.x;
+    let x=lx+lw-width;
+    const y=ly+lh+3;
     for(const [sx,sy,w,h] of digits){
-      ctx.drawImage(art,sx,sy,w,h,x,type.bottom-h*type.scale,w*type.scale,h*type.scale);
+      ctx.drawImage(art,sx,sy,w,h,x,y,w*type.scale,h*type.scale);
       x+=(w+type.spacing)*type.scale;
     }
   }

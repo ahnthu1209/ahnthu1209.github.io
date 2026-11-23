@@ -9,9 +9,9 @@
   <title>Phòng rửa ảnh Solina · Trải nghiệm 3D</title>
   <link rel="preload" href="./cong/loi-vao.webp" as="image">
   <link rel="preload" href="./cong/canh-cong.webp" as="image">
-  <link rel="stylesheet" href="./style.css?v=12">
-  <link rel="stylesheet" href="./avatar.css?v=11">
-  <script type="module" src="./viewer.js?v=13"></script>
+  <link rel="stylesheet" href="./style.css?v=14">
+  <link rel="stylesheet" href="./avatar.css?v=14">
+  <script type="module" src="./viewer.js?v=14"></script>
 </head>
 <body>
   <main class="experience" aria-label="Phòng rửa ảnh Solina">
@@ -59,6 +59,7 @@
             <label>Thu phóng <input id="adjust-zoom" type="range" min=".55" max="1.65" step=".01" value="1"></label>
             <div class="edge-editor">
               <button id="erase-edge" type="button" aria-pressed="false">Xóa nền sót</button>
+              <button id="restore-edge" type="button" aria-pressed="false">Khôi phục chi tiết</button>
               <button id="undo-edge" type="button" disabled>Hoàn tác</button>
             </div>
             <small id="erase-hint" hidden>Kéo nhẹ trên phần nền còn sót trong ảnh xem trước.</small>
@@ -67,7 +68,7 @@
         </div>
       </div>
       <p id="portrait-status" role="status"></p>
-      <p id="result-number" hidden></p>
+      <p id="result-number" hidden><span># Giám tuyển</span><strong id="result-digits"></strong></p>
       <div class="result-caption" id="caption-box" hidden>
         <p id="result-caption"></p>
         <button id="copy-caption" type="button">Sao chép caption</button>
