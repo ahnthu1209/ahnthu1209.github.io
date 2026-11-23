@@ -1,3 +1,4 @@
+import {portraitMask,refineAlpha,removeEdgeColor} from './matte.js?v=11';
 let model;
 const canvas=(w,h=w)=>Object.assign(document.createElement('canvas'),{width:w,height:h});
 const context=(surface,options)=>surface.getContext('2d',options);
@@ -10,8 +11,10 @@ const loadImage=async src=>{
 function script(src){
   return new Promise((resolve,reject)=>{
     const tag=document.createElement('script');
-    tag.src=src;tag.onload=resolve;
-    tag.onerror=()=>{tag.remove();reject(new Error('Tách nền'));};
+    const failed=()=>{clearTimeout(timer);tag.remove();reject(new Error('Chưa tải được thư viện tách nền.'));};
+    const timer=setTimeout(failed,15000);
+    tag.src=src;tag.onload=()=>{clearTimeout(timer);resolve();};
+    tag.onerror=failed;
     document.head.append(tag);
   });
 }
@@ -40,36 +43,50 @@ export async function portraitFrom(file,notify) {
   for(let i=3;i<pixels.data.length;i+=32){if(pixels.data[i]<25){transparent=true;break;}}
   if(!transparent) {
     notify('Đang tách nền chân dung…');
-    model??=assets().catch(e=>{model=undefined;throw e;});
-    let segmenter;
-    try {segmenter=await model;}
-    catch (error) {console.warn('Tách nền ảnh',error);throw new Error('Chưa tải được bộ tách nền. Hãy thử lại hoặc chọn PNG đã tách nền.');}
-    const maskArea=canvas(512);
-    const ratio=512/Math.max(surface.width,surface.height);
-    const w=surface.width*ratio,h=surface.height*ratio,x=(512-w)/2,y=(512-h)/2;
-    const m=context(maskArea);
-    m.fillStyle='#7d7d7d';m.fillRect(0,0,512,512);m.drawImage(surface,x,y,w,h);
-    const result=await segmenter.segmentPerson(maskArea,{
-      internalResolution:'medium',segmentationThreshold:.62,maxDetections:1,scoreThreshold:.25,nmsRadius:20,
-    });
-    const mask=canvas(512),brush=context(mask);
-    const data=brush.createImageData(512,512);
-    for(let i=0;i<result.data.length;i++) data.data[i*4+3]=result.data[i]*255;
-    brush.putImageData(data,0,0);
-    const softened=canvas(512), edge=context(softened);
-    edge.filter='blur(.85px)';
-    edge.drawImage(mask,0,0);
-    applyMask(ctx,surface,softened,x,y,w,h);
+    let mask;
+    try {
+      mask=await portraitMask(surface,script);
+    } catch(error){
+      console.warn('Đang chuyển bộ tách nền',error);
+      mask=await alternativeMask(surface);
+    }
+    applyMask(ctx,surface,pixels,mask);
   }
   return cropPortrait(surface);
 }
 
-function applyMask(ctx,surface,mask,x,y,w,h){
-  const mx=mask.width/512,my=mask.height/512;
-  ctx.globalCompositeOperation='destination-in';
-  ctx.imageSmoothingQuality='high';
-  ctx.drawImage(mask,x*mx,y*my,w*mx,h*my,0,0,surface.width,surface.height);
-  ctx.globalCompositeOperation='source-over';
+async function alternativeMask(surface){
+  model??=assets().catch(error=>{model=undefined;throw error;});
+  let segmenter;
+  try {segmenter=await model;}
+  catch {throw new Error('Chưa tải được bộ tách nền. Hãy thử lại hoặc chọn PNG đã tách nền.');}
+  const mask=canvas(512),brush=context(mask);
+  brush.drawImage(surface,0,0,512,512);
+  const result=await segmenter.segmentPerson(mask,{internalResolution:'high',segmentationThreshold:.77,maxDetections:1,scoreThreshold:.25,nmsRadius:20});
+  const data=brush.createImageData(512,512);
+  for(let i=0;i<result.data.length;i++) data.data[i*4+3]=result.data[i]*255;
+  brush.putImageData(data,0,0);
+  const softened=canvas(512),edge=context(softened);
+  edge.filter='blur(.85px)';
+  edge.drawImage(mask,0,0);
+  const rgb=edge.getImageData(0,0,512,512).data;
+  return {width:512,height:512,alpha:Float32Array.from(result.data,(_,i)=>rgb[i*4+3]/255)};
+}
+
+function applyMask(ctx,surface,pixels,mask){
+  const {width,height,alpha}=mask;
+  const cover=canvas(width,height), brush=context(cover);
+  const clean=refineAlpha(alpha,width,height);
+  const layer=brush.createImageData(width,height);
+  for(let i=0;i<clean.length;i++)layer.data[i*4+3]=Math.round(clean[i]*255);
+  brush.putImageData(layer,0,0);
+  const scaled=canvas(surface.width,surface.height);
+  const projector=context(scaled,{willReadFrequently:true});
+  projector.imageSmoothingQuality='high';
+  projector.drawImage(cover,0,0,scaled.width,scaled.height);
+  const edge=projector.getImageData(0,0,scaled.width,scaled.height);
+  removeEdgeColor(pixels.data,edge.data,scaled.width,scaled.height);
+  ctx.putImageData(pixels,0,0);
 }
 
 function cropPortrait(surface){
@@ -109,11 +126,16 @@ export function frameFor(index) {
   return rendering.get(index);
 }
 
-function drawPortrait(ctx,subject,style,adjust,size,ghost=false){
-  const s=Math.min(size*style.height/subject.height,size*style.maxWidth/subject.width)*adjust.zoom;
-  const w=subject.width*s,h=subject.height*s;
-  const x=(style.x+adjust.x)*size-w/2;
-  const y=(style.top+adjust.y)*size;
+export function portraitRect(subject,index,adjust,size=1000){
+  const style=styles[index];
+  const scale=Math.min(size*style.height/subject.height,size*style.maxWidth/subject.width)*adjust.zoom;
+  const w=subject.width*scale,h=subject.height*scale;
+  return {x:(style.x+adjust.x)*size-w/2,y:(style.top+adjust.y)*size,w,h,scale};
+}
+
+function drawPortrait(ctx,subject,index,adjust,size,ghost=false){
+  const style=styles[index];
+  const {x,y,w,h}=portraitRect(subject,index,adjust,size);
   if(style.shadow&&!ghost){
     const shadow=canvas(subject.width,subject.height);
     const brush=context(shadow);
@@ -134,7 +156,7 @@ function drawPortrait(ctx,subject,style,adjust,size,ghost=false){
 export function previewGhost(subject,index,adjust){
   const out=canvas(1000),ctx=context(out);
   ctx.fillStyle='#eeeae2';ctx.fillRect(0,0,1000,1000);
-  drawPortrait(ctx,subject,{...styles[index],shadow:false},adjust,1000,true);
+  drawPortrait(ctx,subject,index,adjust,1000,true);
   return out;
 }
 
@@ -143,7 +165,7 @@ export async function compose(subject,index,adjust,number){
   const out=canvas(1000),ctx=context(out);
   ctx.imageSmoothingQuality='high';
   ctx.drawImage(background,0,0,1000,1000);
-  drawPortrait(ctx,subject,styles[index],adjust,1000);
+  drawPortrait(ctx,subject,index,adjust,1000);
   ctx.save();ctx.scale(1000/600,1000/600);
   const [lx,ly,lw,lh]=type.label;
   ctx.drawImage(art,0,0,lw,lh,lx,ly,lw,lh);

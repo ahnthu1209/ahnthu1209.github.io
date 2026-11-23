@@ -1,5 +1,5 @@
-import {enableAvatar} from './avatar.js?v=10';
-import {createPrintScene} from './print-scene.js?v=9';
+import {enableAvatar} from './avatar.js?v=11';
+import {createPrintScene} from './print-scene.js?v=11';
 import {createPanoramaView} from './panorama.js?v=6';
 import {vertexShader, fragmentShader} from './surfaces.js?v=6';
 
@@ -8,6 +8,8 @@ const stage = node('stage');
 const viewport = node('view');
 const enter = node('enter');
 const status = node('status');
+const gate = node('gate');
+const experience=gate.parentElement;
 const play = node('play');
 const progress = node('progress');
 const time = node('time');
@@ -173,7 +175,11 @@ async function createWebGLView(canvas,context) {
 
 async function start() {
   enter.disabled = true;
-  status.textContent = 'Đang tải mô hình 3D…';
+  gate.classList.add('opening');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  const waiting=ms=>new Promise(resolve=>setTimeout(resolve,reduced.matches?0:ms));
+  const swing=waiting(1400);
+  const notice=setTimeout(()=>{status.textContent='Đang mở phòng 3D…';},1700);
   try {
     const canvas=document.createElement('canvas');
     const context=canvas.getContext('webgl2',{alpha:false,antialias:true,powerPreference:'high-performance'});
@@ -184,9 +190,6 @@ async function start() {
     }
     if (!display) display=await createPanoramaView(viewport);
     viewport.replaceChildren(display.element);
-    if (display.mode==='panorama') {
-      node('hint').textContent='Chế độ 360° · Kéo để nhìn quanh. Chọn một góc nhìn hoặc phát hành trình.';
-    }
     let value = 0;
     let yaw = 0;
     let pitch = 0;
@@ -290,12 +293,12 @@ async function start() {
         draw();
       }
     });
-    if (stage.requestFullscreen && document.fullscreenEnabled) {
+    if (experience.requestFullscreen && document.fullscreenEnabled) {
       fullscreen.hidden = false;
       fullscreen.addEventListener('click', async () => {
         try {
           if (document.fullscreenElement) await document.exitFullscreen();
-          else await stage.requestFullscreen();
+          else await experience.requestFullscreen();
         } catch (error) { console.warn('Fullscreen unavailable',error); }
       });
       document.addEventListener('fullscreenchange', () => {
@@ -304,10 +307,8 @@ async function start() {
     }
 
     const still=node('fallback-print');
-    const hand=node('fallback-hand');
     const clip=node('fallback-clip');
-    const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
-    const animation=(phase,ms,callback)=>{
+    const animation=(ms,callback)=>{
       return new Promise(resolve=>{
         const start=performance.now();
         const frame=now=>{
@@ -325,7 +326,7 @@ async function start() {
     };
     function resetPrint(){
       display.workshop?.reset();
-      still.hidden=hand.hidden=clip.hidden=true;
+      still.hidden=clip.hidden=true;
       still.removeAttribute('src');
     }
     function fallbackFrame(phase,t){
@@ -345,13 +346,7 @@ async function start() {
       still.style.setProperty('--sheet-w',w+'%');
       still.style.setProperty('--sheet-roll',blend(1,-6,safe)+'deg');
       still.style.setProperty('--sheet-tilt',(pan?blend(38,67,d):blend(19,0,k))+'deg');
-      const topMeasure=(w*stage.clientWidth/stage.clientHeight)*.47;
-      const handOffset=pan?0:smooth(clamp((t-.61)/.39));
-      hand.hidden=phase==='reveal'||handOffset>.98;
-      hand.style.setProperty('--hand-x',(x+w*.31+handOffset*16)+'%');
-      hand.style.setProperty('--hand-y',(y-topMeasure*(pan?.49:1)+handOffset*9)+'%');
-      hand.style.setProperty('--hand-w',(landscape?30:42)+'%');
-      hand.style.setProperty('--hand-roll',blend(-20,-6,safe)+'deg');
+      const topMeasure=Math.min(32,w*stage.clientWidth/stage.clientHeight)*.47;
       clip.hidden=pan||k<.78;
       clip.style.setProperty('--sheet-x',x+'%');
       clip.style.setProperty('--clip-y',Math.max(14,y-topMeasure)+'%');
@@ -360,32 +355,27 @@ async function start() {
       async wash(ghost,cue){
         stop();runningPrint=true;
         stage.classList.add('washing');
+        experience.dataset.washing='';
         try {
           if(display.workshop)display.workshop.start(ghost);
           else {still.src=ghost.toDataURL();still.hidden=false;}
           setPosition('trays');
           cue('Đang tráng ảnh');
-          if(display.workshop){
-            const animate=(phase,ms)=>animation(phase,ms,value=>{
-              display.workshop.frame(phase,value);draw();
-            });
-            await animate('dip',2200);
-            await animate('lift',700);
-            setPosition('prints');
-            cue('Đang kẹp ảnh lên dây');
-            await animate('hang',1250);
-          } else {
-            await animation('dip',2200,t=>fallbackFrame('dip',t));
-            await animation('lift',700,t=>fallbackFrame('lift',t));
-            setPosition('prints');
-            cue('Đang kẹp ảnh lên dây');
-            await animation('hang',1250,t=>fallbackFrame('hang',t));
-          }
+          const animate=(phase,ms)=>animation(ms,t=>{
+            if(display.workshop){display.workshop.frame(phase,t);draw();}
+            else fallbackFrame(phase,t);
+          });
+          await animate('dip',3000);
+          cue('Đang nhấc ảnh khỏi khay');
+          await animate('lift',1000);
+          setPosition('prints');
+          cue('Đang kẹp ảnh lên dây');
+          await animate('hang',1750);
           cue('Chờ ảnh hiện màu');
-          await pause(1500);
+          await pause(2100);
         } catch (e){
           runningPrint=false;
-          stage.classList.remove('washing');
+          stage.classList.remove('washing');delete experience.dataset.washing;
           throw e;
         }
       },
@@ -394,33 +384,41 @@ async function start() {
         try {
           if(display.workshop){
             display.workshop.finish(portrait);
-            await animation('reveal',700,value=>{
+            await animation(1000,value=>{
               display.workshop.frame('reveal',value);draw();
             });
           } else {
             still.hidden=false;
             still.src=portrait.toDataURL();
             fallbackFrame('reveal',1);
-            if(!reduced.matches)still.animate([{opacity:.3},{opacity:1}],{duration:700});
-            await pause(700);
+            if(!reduced.matches)still.animate([{opacity:.3},{opacity:1}],{duration:1000});
+            await pause(1000);
           }
         } finally {
-          runningPrint=false;stage.classList.remove('washing');
+          runningPrint=false;stage.classList.remove('washing');delete experience.dataset.washing;
         }
       },
-      reset(){runningPrint=false;stage.classList.remove('washing');resetPrint();setPosition('entry');},
-      unlock(){runningPrint=false;stage.classList.remove('washing');},
+      reset(){runningPrint=false;stage.classList.remove('washing');delete experience.dataset.washing;resetPrint();setPosition('entry');},
+      unlock(){runningPrint=false;stage.classList.remove('washing');delete experience.dataset.washing;},
     };
     draw();
     stage.classList.add('ready');
-    node('controls').hidden = false;
-    node('hint').hidden = false;
+    await swing;
+    clearTimeout(notice);
+    status.textContent='';
+    gate.classList.add('passing');
+    await waiting(680);
+    gate.hidden=true;
+    viewport.inert=false;
+    node('controls').hidden=false;
     enableAvatar(director);
     node('portrait-file').focus({preventScroll:true});
   } catch (error) {
     console.error(error);
+    clearTimeout(notice);
+    gate.classList.remove('opening','passing');
     status.textContent = 'Chưa mở được mô hình 3D trên trình duyệt này. Bạn vẫn có thể xem ảnh toàn cảnh.';
-    enter.textContent = 'Thử mở lại';
+    enter.querySelector('span').textContent='Thử mở lại';
     enter.disabled = false;
   }
 }

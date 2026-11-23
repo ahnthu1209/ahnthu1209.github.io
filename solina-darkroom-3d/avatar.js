@@ -1,9 +1,19 @@
-import {portraitFrom,styles,previewGhost,compose,frameFor} from './portrait.js?v=10';
+import {portraitFrom,styles,previewGhost,compose,frameFor,portraitRect} from './portrait.js?v=11';
 
 const api='https://solina-so-giam-tuyen.ahnthu1209.chatgpt.site/api/issue';
 const get=id=>document.getElementById(id);
 const defaults=()=>({x:0,y:0,zoom:1});
 const delay=milliseconds=>new Promise(resolve=>setTimeout(resolve,milliseconds));
+export const captions=[
+  'Đừng đặt kỳ vọng vào người khác, hãy đặt cọc',
+  'Mong gió xuân khẽ động, còn dòng tiền đại động',
+  'Không có con đường nào trải đầy hoa hồng, không có hoa hồng tôi không đi',
+  'Hữu xạ tự nhiên hương, hữu duyên tự nhiên chốt',
+  'Đừng nhìn em lâu...\nNhìn bảng hàng đi anh!',
+  'Ngoài mặt kiêu sa\nBên trong chờ khách chốt nhà...',
+  'Tôi đã học cách buông bỏ, “buông hợp đồng bỏ vào tay khách”',
+];
+
 let db;
 
 const storage=()=>{
@@ -41,6 +51,28 @@ function restoreCanvas(image){
   image.close();
   return canvas;
 }
+async function recognizeSavedStyle(canvas){
+  const size=20;
+  const sampler=Object.assign(document.createElement('canvas'),{width:size,height:size}).getContext('2d',{willReadFrequently:true});
+  function sample(img){
+    sampler.drawImage(img,0,0,size,size);
+    return sampler.getImageData(0,0,size,size).data;
+  }
+  const original=sample(canvas);
+  const scores=await Promise.all(styles.map(async (_,i)=>{
+    const [background]=await frameFor(i);
+    const candidate=sample(background);
+    let error=0;
+    for(let y=0;y<size;y++) for(let x=0;x<size;x++){
+      if(y>=3&&x>=2&&x<size-2)continue;
+      const offset=(y*size+x)*4;
+      for(let channel=0;channel<3;channel++) error+=Math.min(65,Math.abs(original[offset+channel]-candidate[offset+channel]));
+    }
+    return error;
+  }));
+  return scores.indexOf(Math.min(...scores));
+}
+
 function newTicket(){return Array.from(crypto.getRandomValues(new Uint8Array(32)),x=>x.toString(16).padStart(2,'0')).join('');}
 
 async function claim(ticket,index){
@@ -62,15 +94,18 @@ export function enableAvatar(director){
   const adjustFields=['x','y','zoom'].map(key=>get('adjust-'+key));
   let subject, index=0, adjust=defaults(), record, readyImage;
   let working=false, awaitingNumber=false, busyFile=false, renderKey=0, downloadURL;
+  let captionReset, edgeOriginal, stroke, pendingFrame;
+  const erase=get('erase-edge'), undo=get('undo-edge');
   const buttons=styles.map((style,i)=>{
     const button=document.createElement('button');
     button.type='button';button.className='sample';
     button.setAttribute('aria-pressed',String(i===index));
     const img=new Image();img.src='./bo-anh/mau-'+(i+1)+'.webp';img.alt='';
-    button.append(img,style.name);
+    const title=document.createElement('span');title.textContent=style.name;
+    button.append(img,title);
     button.addEventListener('click',()=>{
       if(working||awaitingNumber)return;
-      index=i;adjust=defaults();updateSliders();select();
+      stopErasing();index=i;adjust=defaults();updateSliders();select();
     });
     return button;
   });
@@ -86,12 +121,13 @@ export function enableAvatar(director){
   }
   async function select(){
     buttons.forEach((button,i)=>button.setAttribute('aria-pressed',String(i===index)));
+    get('selected-style').textContent=styles[index].name;
     const key=++renderKey;
     get('wash-photo').disabled=true;
     try {
       const art=await compose(subject,index,adjust);
       if(key!==renderKey) return;
-      setPreview(art);
+      tell('');setPreview(art);
       get('wash-photo').disabled=false;
     } catch {
       if(key===renderKey) tell('Chưa tải được mẫu này. Hãy thử chọn lại mẫu.');
@@ -100,7 +136,57 @@ export function enableAvatar(director){
   adjustFields.forEach(input=>input.addEventListener('input',()=>{
     adjust[input.id.slice(7)]=Number(input.value);select();
   }));
+  function setErasing(enabled){
+    erase.setAttribute('aria-pressed',String(enabled));
+    preview.classList.toggle('erasing',enabled);
+    get('erase-hint').hidden=!enabled;
+    if(!enabled)stroke=null;
+  }
+  function stopErasing(){
+    setErasing(false);
+    if(pendingFrame){cancelAnimationFrame(pendingFrame);pendingFrame=undefined;}
+  }
+  function freshEdges(){
+    stopErasing();edgeOriginal=null;undo.disabled=true;
+  }
+  function paintEdge(event,from){
+    const area=preview.getBoundingClientRect();
+    const rect=portraitRect(subject,index,adjust);
+    const x=((event.clientX-area.left)*1000/area.width-rect.x)/rect.scale;
+    const y=((event.clientY-area.top)*1000/area.height-rect.y)/rect.scale;
+    const brush=subject.getContext('2d'), radius=Math.max(2,5*1000/area.width/rect.scale);
+    brush.save();
+    brush.globalCompositeOperation='destination-out';
+    brush.beginPath();brush.lineWidth=radius*2;brush.lineCap='round';
+    brush.moveTo(from?.x??x,from?.y??y);brush.lineTo(x+.001,y+.001);brush.stroke();brush.restore();
+    get('wash-photo').disabled=true;
+    if(!pendingFrame)pendingFrame=requestAnimationFrame(()=>{pendingFrame=undefined;select();});
+    return {x,y};
+  }
+  erase.onclick=()=>setErasing(erase.getAttribute('aria-pressed')!=='true');
+  undo.onclick=()=>{
+    if(!edgeOriginal)return;
+    subject=edgeOriginal;freshEdges();select();
+  };
+  preview.addEventListener('pointerdown',event=>{
+    if(!subject||readyImage||working||erase.getAttribute('aria-pressed')!=='true'||event.button!==0)return;
+    event.preventDefault();
+    if(!edgeOriginal){
+      edgeOriginal=Object.assign(document.createElement('canvas'),{width:subject.width,height:subject.height});
+      edgeOriginal.getContext('2d').drawImage(subject,0,0);
+      undo.disabled=false;
+    }
+    preview.setPointerCapture(event.pointerId);
+    stroke={...paintEdge(event),id:event.pointerId};
+  });
+  preview.addEventListener('pointermove',event=>{
+    if(stroke?.id===event.pointerId)stroke={...paintEdge(event,stroke),id:event.pointerId};
+  });
+  preview.addEventListener('lostpointercapture',()=>{stroke=null;});
   function refreshPanel(){
+    panel.dataset.step=working?'processing':awaitingNumber?'retry':readyImage?'result':subject?'choose':'upload';
+    get('selected-style').hidden=!subject||working||awaitingNumber||!!readyImage;
+    get('caption-box').hidden=!readyImage||!get('result-caption').textContent;
     get('choose-title').hidden=!subject||working||awaitingNumber||!!readyImage;
     get('choices-wrap').hidden=(!subject&&!readyImage)||working||awaitingNumber;
     choices.hidden=!!readyImage;
@@ -114,7 +200,7 @@ export function enableAvatar(director){
     get('retry-number').hidden=!awaitingNumber||working;
     get('resume-photo').hidden=!record||!!subject||!!readyImage||working;
   }
-  async function showResult(canvas,number,png){
+  async function showResult(canvas,number,png,style){
     readyImage=canvas;
     setPreview(canvas);
     if(downloadURL)URL.revokeObjectURL(downloadURL);
@@ -123,25 +209,28 @@ export function enableAvatar(director){
     link.href=downloadURL;
     link.download='SOLINA-Giam-Tuyen-'+number+'.png';
     get('result-number').textContent='# Giám tuyển '+number;
+    get('result-caption').textContent=captions[style]||'';
+    get('copy-caption').textContent='Sao chép caption';
     tell('');
   }
   async function answerAndReveal(){
     const number=await claim(record.ticket,index);
     const final=await compose(subject,index,adjust,number);
     const png=await toBlob(final);
-    record={number,png};
+    record={number,png,style:index};
     await saved(record);
     setCue('Ảnh đang hiện màu');
     await director.reveal(final);
-    await showResult(final,number,png);
+    await showResult(final,number,png,index);
     setCue('');
     awaitingNumber=false;
     refreshPanel();
-    get('download-photo').focus();
+
   }
   async function wash(resume=false){
     if(working||!subject)return;
     working=true;
+    stopErasing();
     awaitingNumber=false;
     tell('');
     refreshPanel();
@@ -150,7 +239,6 @@ export function enableAvatar(director){
       if(!resume){
         if(!record?.ticket)record={ticket:newTicket(),style:index,adjust:{...adjust},subject:await toBlob(subject)};
         await saved(record);
-        get('stage').scrollIntoView({block:'center',behavior:'instant'});
         await director.wash(previewGhost(subject,index,adjust),setCue);
       }
       setCue('Đang ghi số giám tuyển');
@@ -162,6 +250,7 @@ export function enableAvatar(director){
     } finally {
       working=false;
       refreshPanel();
+      if(readyImage)get('download-photo').focus({preventScroll:true});
     }
   }
 
@@ -176,12 +265,12 @@ export function enableAvatar(director){
       tell('Đang mở ảnh…');
       await delay(32);
       const photo=await portraitFrom(file,tell);
-      subject=photo;record=null;readyImage=null;index=0;adjust=defaults();updateSliders();
+      freshEdges();subject=photo;record=null;readyImage=null;index=0;adjust=defaults();updateSliders();
       await saved(null);
       setCue('');
       tell('');refreshPanel();
       await select();
-      get('choose-title').focus();
+      get('choose-title').focus({preventScroll:true});
     } catch(error) {
       tell(error.message);subject=previous;
     } finally {
@@ -203,11 +292,28 @@ export function enableAvatar(director){
   get('restart-photo').onclick=async()=>{
     if(working)return;
     if(downloadURL){URL.revokeObjectURL(downloadURL);downloadURL=null;}
-    record=null;readyImage=null;subject=null;index=0;adjust=defaults();
+    freshEdges();record=null;readyImage=null;subject=null;index=0;adjust=defaults();
     director.reset();updateSliders();refreshPanel();
     tell('');setCue('');
     await saved(null);
-    picker.focus();
+    picker.focus({preventScroll:true});
+  };
+
+  const copy=get('copy-caption');
+  copy.onclick=async()=>{
+    clearTimeout(captionReset);
+    const text=get('result-caption');
+    try {
+      await navigator.clipboard.writeText(text.textContent);
+      copy.textContent='Đã sao chép';
+      captionReset=setTimeout(()=>{copy.textContent='Sao chép caption';},1800);
+    } catch {
+      const range=document.createRange();
+      range.selectNodeContents(text);
+      window.getSelection()?.removeAllRanges();
+      window.getSelection()?.addRange(range);
+      tell('Caption đã được chọn để bạn sao chép.');
+    }
   };
 
   panel.hidden=false;
@@ -215,7 +321,16 @@ export function enableAvatar(director){
   saved().then(async state=>{
     if(!state||subject||busyFile)return;
     record=state;
-    if(state.number&&state.png)await showResult(restoreCanvas(await createImageBitmap(state.png)),state.number,state.png);
+    if(state.number&&state.png){
+      const picture=restoreCanvas(await createImageBitmap(state.png));
+      let style=state.style;
+      if(!Number.isInteger(style)){
+        style=await recognizeSavedStyle(picture).catch(()=>undefined);
+        if(Number.isInteger(style)&&record===state){record={...state,style};await saved(record);}
+        else if(record!==state)return;
+      }
+      await showResult(picture,state.number,state.png,style);
+    }
     refreshPanel();
   }).catch(()=>{});
 }
