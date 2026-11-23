@@ -1,7 +1,9 @@
 import {enableAvatar} from './avatar.js?v=14';
 import {createPrintScene} from './print-scene.js?v=11';
-import {createPanoramaView} from './panorama.js?v=6';
+import {createPanoramaView} from './panorama.js?v=15';
 import {vertexShader, fragmentShader} from './surfaces.js?v=6';
+
+import {createOrientationControl} from './orientation.js?v=15';
 
 const node = id => document.getElementById(id);
 const stage = node('stage');
@@ -17,6 +19,23 @@ const time = node('time');
 const fullscreen = node('fullscreen');
 const spots = [...document.querySelectorAll('[data-spot]')];
 const duration = 10_000;
+const soundtrack = node('background-music');
+const soundToggle = node('sound-toggle');
+const mobile = matchMedia('(any-pointer: coarse)');
+
+function playSoundtrack() {
+  soundtrack.play().catch(()=>{});
+}
+function updateSoundToggle() {
+  soundToggle.textContent = soundtrack.paused ? 'Bật nhạc' : 'Tắt nhạc';
+  soundToggle.setAttribute('aria-label', soundtrack.paused ? 'Bật nhạc nền' : 'Tắt nhạc nền');
+}
+soundtrack.addEventListener('play',updateSoundToggle);
+soundtrack.addEventListener('pause',updateSoundToggle);
+soundToggle.addEventListener('click',()=>{
+  if(soundtrack.paused) playSoundtrack();
+  else soundtrack.pause();
+});
 
 const threeVersions = [
   'https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.module.min.js',
@@ -123,12 +142,15 @@ async function createWebGLView(canvas,context) {
     const direction = new THREE.Vector3();
     const previous = new THREE.Vector3();
     const next = new THREE.Vector3();
-    function draw({active,value,yaw,pitch}) {
+    function draw({active,value,yaw,pitch,orientation}) {
       const {width,height}=viewport.getBoundingClientRect();
       if (!width || !height) return;
       const aspect = width/height;
-      if (camera.aspect!==aspect || renderer.domElement.clientWidth!==width || 
-          renderer.domElement.width!==Math.floor(width*renderer.getPixelRatio())) {
+      const pixelRatio = orientation ? Math.min(1.25, window.devicePixelRatio || 1)
+        : Math.min(Math.max(1.2, window.devicePixelRatio || 1),1.75);
+      if (renderer.getPixelRatio() !== pixelRatio) renderer.setPixelRatio(pixelRatio);
+      if (camera.aspect!==aspect || renderer.domElement.clientWidth!==width ||
+          renderer.domElement.width!==Math.floor(width*pixelRatio)) {
         camera.aspect=aspect;
         renderer.setSize(width,height,false);
       }
@@ -157,7 +179,8 @@ async function createWebGLView(canvas,context) {
       const heading = Math.atan2(direction.x,-direction.z);
       const tilt = Math.max(-1.2,Math.min(1.2,Math.asin(direction.y)+pitch));
       direction.set(Math.sin(heading)*Math.cos(tilt),Math.sin(tilt),-Math.cos(heading)*Math.cos(tilt));
-      camera.lookAt(target.copy(camera.position).add(direction));
+      if (orientation) camera.quaternion.copy(orientation);
+      else camera.lookAt(target.copy(camera.position).add(direction));
       if(instruction) workshop.frame(instruction.phase,instruction.progress,camera,aspect<1);
       renderer.render(scene,camera);
     }
@@ -166,6 +189,7 @@ async function createWebGLView(canvas,context) {
     draw(initial);
     return {
       element:renderer.domElement, mode:'3d', draw,
+      orientationBasis:()=>camera.quaternion.clone(),
       workshop:{
         start:workshop.start, finish:workshop.finish,
         frame(phase,progress){instruction={phase,progress};},
@@ -175,6 +199,7 @@ async function createWebGLView(canvas,context) {
 }
 
 async function start() {
+  playSoundtrack();
   enter.disabled = true;
   // Prepare the scene before moving the gate so it never hangs half-open
   // while large 3D assets are still downloading.
@@ -199,11 +224,48 @@ async function start() {
     let startAt = 0;
     let pointer = null;
     let runningPrint=false;
+    let orientation = null;
+    const vrControls = node('vr-controls');
+    const vrToggle = node('vr-toggle');
+    const recenter = node('vr-recenter');
+    const vrStatus = node('vr-status');
+    const vr = createOrientationControl({
+      loadEngine:importThree,
+      getBasis(Quaternion, Euler) {
+        if (display.orientationBasis) return display.orientationBasis();
+        const heading = active === 'entry' ? Math.max(-.93, Math.min(.93, yaw)) : yaw;
+        const tilt = Math.max(-1.08, Math.min(1.08, pitch));
+        return new Quaternion().setFromEuler(new Euler(tilt, heading, 0, 'YXZ'));
+      },
+      canStart:()=>mobile.matches && !runningPrint,
+      onFrame(next) { orientation = next; draw(); },
+      onState(state,message) {
+        const active = state === 'active';
+        const engaged = state !== 'off';
+        if (engaged) {
+          stop();
+          if (pointer && viewport.hasPointerCapture(pointer.id)) viewport.releasePointerCapture(pointer.id);
+          pointer = null;
+        }
+        for (const control of [...spots, play, progress]) control.disabled = engaged;
+        vrToggle.textContent = state === 'pending' ? 'Hủy bật VR' : active ? 'Tắt VR' : 'Bật VR';
+        vrToggle.setAttribute('aria-pressed', String(active));
+        if (!active && document.activeElement === recenter) vrToggle.focus({preventScroll:true});
+        recenter.hidden = !active;
+        vrStatus.textContent = message;
+        vrStatus.hidden = !message;
+        experience.toggleAttribute('data-vr', active);
+        if (!engaged) { orientation = null; draw(); }
+      },
+    });
+    vrToggle.addEventListener('click',()=>vr.engaged ? vr.stop() : vr.start());
+    recenter.addEventListener('click',vr.recenter);
+
     function formatTime(fraction) {
       return `0:${String(Math.min(10,Math.floor(fraction * 10))).padStart(2,'0')} / 0:10`;
     }
 
-    function draw() { display.draw({active,value,yaw,pitch}); }
+    function draw() { display.draw({active,value,yaw,pitch,orientation}); }
     new ResizeObserver(draw).observe(viewport);
 
     function setValue(nextValue) {
@@ -227,7 +289,7 @@ async function start() {
     }
 
     function beginTour() {
-      if (runningPrint) return;
+      if (runningPrint || vr.engaged) return;
       if (playing) { stop(); return; }
       resetPrint();
       if (active === 'trays' || active === 'prints' || value >= 1) setValue(0);
@@ -241,7 +303,7 @@ async function start() {
     }
 
     function navigate(valueNext) {
-      if(runningPrint)return;
+      if(runningPrint||vr.engaged)return;
       resetPrint();
       stop();
       if (active === 'trays' || active === 'prints') yaw = pitch = 0;
@@ -255,7 +317,7 @@ async function start() {
     progress.addEventListener('input', () => navigate(Number(progress.value)/1000));
     for (const button of spots) {
       button.addEventListener('click', () => {
-        if(runningPrint)return;
+        if(runningPrint||vr.engaged)return;
         resetPrint();
         stop();
         active = button.dataset.spot;
@@ -266,7 +328,7 @@ async function start() {
       });
     }
     viewport.addEventListener('pointerdown', event => {
-      if (pointer || event.button !== 0 || runningPrint) return;
+      if (pointer || event.button !== 0 || runningPrint || vr.engaged) return;
       stop();
       pointer = {id:event.pointerId,x:event.clientX,y:event.clientY};
       viewport.setPointerCapture(event.pointerId);
@@ -281,7 +343,7 @@ async function start() {
     });
     viewport.addEventListener('lostpointercapture', () => {pointer = null;});
     viewport.addEventListener('keydown', event => {
-      if (runningPrint) return;
+      if (runningPrint || vr.engaged) return;
       if (!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Home'].includes(event.key)) return;
       event.preventDefault();
       if (event.key === 'Home') spots[0].click();
@@ -353,6 +415,7 @@ async function start() {
     }
     const director={
       async wash(ghost,cue){
+        vr.stop();
         stop();runningPrint=true;
         stage.classList.add('washing');
         experience.dataset.washing='';
@@ -380,6 +443,7 @@ async function start() {
         }
       },
       async reveal(portrait){
+        vr.stop();
         setPosition('prints');
         try {
           if(display.workshop){
@@ -398,7 +462,7 @@ async function start() {
           runningPrint=false;stage.classList.remove('washing');delete experience.dataset.washing;
         }
       },
-      reset(){runningPrint=false;stage.classList.remove('washing');delete experience.dataset.washing;resetPrint();setPosition('entry');},
+      reset(){vr.stop();runningPrint=false;stage.classList.remove('washing');delete experience.dataset.washing;resetPrint();setPosition('entry');},
       unlock(){runningPrint=false;stage.classList.remove('washing');delete experience.dataset.washing;},
     };
     draw();
@@ -416,10 +480,13 @@ async function start() {
     gate.hidden=true;
     viewport.inert=false;
     node('controls').hidden=false;
+    node('experience-tools').hidden=false;
+    vrControls.hidden=!mobile.matches;
     enableAvatar(director);
     node('portrait-file').focus({preventScroll:true});
   } catch (error) {
     console.error(error);
+    soundtrack.pause();
     clearTimeout(notice);
     gate.classList.remove('opening','passing');
     status.textContent = 'Chưa mở được mô hình 3D trên trình duyệt này. Bạn vẫn có thể xem ảnh toàn cảnh.';

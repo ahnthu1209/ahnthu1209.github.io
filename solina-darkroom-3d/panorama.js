@@ -70,7 +70,7 @@ export async function createPanoramaView(viewport) {
   function paint() {
     pending=0;
     if (!settings || !viewport.clientWidth) return;
-    const {active,value,yaw,pitch}=settings;
+    const {active,value,yaw,pitch,orientation}=settings;
     const index=Math.round(value*(route.length-1));
     const selected=active==='trays' ? 'bacs' : active==='prints' ? 'tirages' : route[index];
     const next=frames.get(selected);
@@ -82,7 +82,8 @@ export async function createPanoramaView(viewport) {
     } else ensure(selected);
     if (active!=='trays' && active!=='prints') ensure(route[index+1]);
 
-    const width=Math.min(1200,viewport.clientWidth);
+    const aspect = viewport.clientHeight / viewport.clientWidth;
+    const width = Math.min(orientation ? Math.floor(Math.sqrt(250000 / aspect)) : 1200,viewport.clientWidth);
     const height=Math.round(width*viewport.clientHeight/viewport.clientWidth);
     if (!width || !height) return;
     if (!out || width!==display.width || height!==display.height) {
@@ -98,7 +99,8 @@ export async function createPanoramaView(viewport) {
     const portrait=width/height<.95 && (active==='trays'||active==='prints') ? 12 : 0;
     const tilt=Math.max(-1.08,Math.min(1.08,pitch));
     const rotation=active==='entry' ? Math.max(-.93,Math.min(.93,yaw)) : yaw;
-    const projection=[width,height,current.size,field,portrait,tilt,rotation].join(':');
+    const projection=[width,height,current.size,field,portrait,
+      ...(orientation ? orientation.toArray() : [tilt,rotation])].join(':');
     if (cacheKey!==projection) {
       cacheKey=projection;
       const dx=Math.tan((field+portrait)*Math.PI/360)*2/height;
@@ -106,6 +108,15 @@ export async function createPanoramaView(viewport) {
       const lowered=Math.sin(tilt);
       const ahead=Math.cos(rotation);
       const side=Math.sin(rotation);
+      // Project the same camera-space ray used by Three.js (-Z forward),
+      // then convert Z to the cubemap convention (+Z forward).
+      let xx, xy, xz, yx, yy, yz, zx, zy, zz;
+      if (orientation) {
+        const {x,y,z,w}=orientation;
+        xx=1-2*(y*y+z*z); xy=2*(x*y-z*w); xz=2*(x*z+y*w);
+        yx=2*(x*y+z*w); yy=1-2*(x*x+z*z); yz=2*(y*z-x*w);
+        zx=2*(x*z-y*w); zy=2*(y*z+x*w); zz=1-2*(x*x+y*y);
+      }
       for (let row=0;row<height;row++) {
         const y=(height*.5-row-.5)*dx;
         const up=y*upright+lowered;
@@ -113,7 +124,9 @@ export async function createPanoramaView(viewport) {
         const offset=row*width;
         for(let col=0;col<width;col++) {
           const right=(col+.5-width*.5)*dx;
-          sampled[offset+col]=lookup(right*ahead-forward*side,up,forward*ahead+right*side,current.size,current.width);
+          sampled[offset+col]=orientation
+            ? lookup(xx*right+xy*y-xz,yx*right+yy*y-yz,zz-zx*right-zy*y,current.size,current.width)
+            : lookup(right*ahead-forward*side,up,forward*ahead+right*side,current.size,current.width);
         }
       }
     }
