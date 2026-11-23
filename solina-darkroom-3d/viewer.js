@@ -1,5 +1,5 @@
-import {createPanoramaView} from './panorama.js?v=3';
-import {createProjectedLight, projectionGLSL} from './projected-light.js';
+import {createPanoramaView} from './panorama.js?v=4';
+import {vertexShader, fragmentShader} from './surfaces.js';
 
 const node = id => document.getElementById(id);
 const stage = node('stage');
@@ -26,7 +26,7 @@ async function importThree() {
 }
 
 async function fetchScene() {
-  const response = await fetch('./phong-toi-3d.bin');
+  const response = await fetch('./phong-toi-net.bin');
   if (!response.ok || !response.body) throw new Error('3D model could not be loaded');
   const stream = response.body.pipeThrough(new DecompressionStream('gzip'));
   const data = await new Response(stream).arrayBuffer();
@@ -35,65 +35,6 @@ async function fetchScene() {
   const bytes = new Uint8Array(data, 4 + size);
   return {meta, bytes};
 }
-
-const vertexShader = `
-  varying vec3 surface;
-  varying vec3 location;
-  varying vec3 irradiance;
-  varying vec2 texturePoint;
-  void main() {
-    surface = mat3(modelMatrix) * normal;
-    location = (modelMatrix * vec4(position, 1.0)).xyz;
-    irradiance = color;
-    texturePoint = uv;
-    gl_Position = projectionMatrix * viewMatrix * vec4(location, 1.0);
-  }
-`;
-
-const fragmentShader = `
-  uniform vec3 baseColor;
-  uniform float metallic;
-  uniform float roughnessLevel;
-  uniform bool glowing;
-  uniform bool water;
-  uniform bool hasImage;
-  uniform sampler2D imageMap;
-  varying vec3 surface;
-  varying vec3 location;
-  varying vec3 irradiance;
-  varying vec2 texturePoint;
-
-  float grain(vec3 p) {
-    return fract(sin(dot(p,vec3(12.9898,78.233,37.719)))*43758.5453);
-  }
-
-  ${projectionGLSL}
-  void main() {
-    vec3 diffuse = hasImage ? texture2D(imageMap, texturePoint).rgb : baseColor;
-    vec3 n = normalize(surface) * (gl_FrontFacing ? 1.0 : -1.0);
-    vec3 eye = normalize(cameraPosition-location);
-    vec3 color = diffuse * irradiance * 1.32;
-    if (glowing) color = 0.8 + baseColor * 0.45;
-    if (!glowing && !hasImage) {
-      float fineGrain = grain(floor(location*370.0));
-      color *= mix(.87, 1.13, fineGrain);
-      float grazed = pow(1.0-max(0.0,dot(n,eye)), 3.2);
-      float lift = max(0.0,dot(n, normalize(vec3(-.36,.75,.24))));
-      float lamp = pow(max(0.0,dot(n, normalize(normalize(vec3(1.18-location.x,1.87-location.y,.05-location.z))+eye))), mix(90.,12.,roughnessLevel));
-      float metalReflection = (.010+lift*.023+grazed*.030+lamp*.19)*metallic;
-      color += vec3(1.0,.86,.64)*(metalReflection+lamp*.028*(1.0-roughnessLevel));
-      if (water) {
-        color *= .29;
-        color += vec3(.30,.23,.13)*(lamp*.41 + grazed*.075 + fineGrain*.034);
-      }
-    }
-    vec4 matched = sceneGrade(n,location);
-    float strength = matched.a * (hasImage ? .91 : 1.);
-    color = mix(color,matched.rgb,strength);
-    gl_FragColor = vec4(color,water ? mix(.43,1.,strength) : 1.0);
-    #include <colorspace_fragment>
-  }
-`;
 
 function typed(data, Type) {
   return new Type(data.buffer.slice(data.byteOffset, data.byteOffset+data.byteLength));
@@ -104,56 +45,66 @@ function updateButton(active) {
 }
 
 async function createWebGLView(canvas,context) {
-    const [THREE, model] = await Promise.all([importThree(), fetchScene()]);
+    const [THREE, model, mapResponse, waterResponse] = await Promise.all([
+      importThree(),fetchScene(),fetch('./be-mat.webp'),fetch('./mat-nuoc.webp'),
+    ]);
+    if (!mapResponse.ok || !waterResponse.ok) throw new Error('Không tải được bề mặt của phòng');
     const renderer = new THREE.WebGLRenderer({canvas,context,antialias:true});
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.65));
+    renderer.setPixelRatio(Math.min(Math.max(1.2,window.devicePixelRatio || 1),1.75));
     renderer.debug.onShaderError=(gl,program,vertex,fragment) => {
       throw new Error(gl.getProgramInfoLog(program) || gl.getShaderInfoLog(fragment) || gl.getShaderInfoLog(vertex));
     };
     const scene = new THREE.Scene();
-    let refreshLight=()=>{};
-    const projected=await createProjectedLight(THREE,()=>refreshLight());
     scene.background = new THREE.Color('#18140f');
-    const camera = new THREE.PerspectiveCamera(57, 1, .044, 24);
+    const camera = new THREE.PerspectiveCamera(57,1,.044,24);
     const {meta, bytes} = model;
-    const part = ([offset, length]) => bytes.subarray(offset, offset + length);
-    const textures = new Map();
-    await Promise.all(Object.entries(meta.textures).map(async ([name, range]) => {
-      const bitmap = await createImageBitmap(new Blob([part(range)], {type:'image/jpeg'}), {imageOrientation:'flipY'});
-      const texture = new THREE.Texture(bitmap);
-      texture.flipY = false;
-      texture.colorSpace = THREE.SRGBColorSpace;
-      texture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
-      texture.needsUpdate = true;
-      textures.set(name, texture);
+    const part = ([offset, length]) => bytes.subarray(offset,offset+length);
+
+    async function unpackTexture(data) {
+      const bitmap=await createImageBitmap(data,{imageOrientation:'flipY'});
+      const texture=new THREE.Texture(bitmap);
+      texture.flipY=false;
+      texture.colorSpace=THREE.SRGBColorSpace;
+      texture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+      texture.needsUpdate=true;
+      return texture;
+    }
+
+    const [surfaceMap, waterMap] = await Promise.all([
+      mapResponse.blob().then(unpackTexture),waterResponse.blob().then(unpackTexture),
+    ]);
+    const textures=new Map();
+    await Promise.all(Object.entries(meta.textures).map(async ([name,range]) => {
+      textures.set(name,await unpackTexture(new Blob([part(range)],{type:'image/jpeg'})));
     }));
 
     for (const item of meta.groups) {
-      const geometry = new THREE.BufferGeometry();
-      const raw = typed(part(item.positions), Int16Array);
-      const positions = Float32Array.from(raw, value => value/7000);
-      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-      geometry.setAttribute('normal', new THREE.BufferAttribute(typed(part(item.normals), Int8Array), 3, true));
-      geometry.setAttribute('color', new THREE.BufferAttribute(part(item.colors), 3, true));
-      if (item.uv) geometry.setAttribute('uv', new THREE.BufferAttribute(typed(part(item.uv), Uint16Array), 2, true));
-      geometry.setIndex(new THREE.BufferAttribute(typed(part(item.indices), item.index32 ? Uint32Array : Uint16Array), 1));
-      const material = new THREE.ShaderMaterial({
-        uniforms: {
-          ...projected.uniforms,
-          baseColor: {value: new THREE.Color(...item.rgb)},
-          metallic: {value:item.metal}, roughnessLevel: {value:item.rough},
-          glowing: {value:item.glow}, water: {value:item.water},
-          hasImage: {value:Boolean(item.texture)}, imageMap: {value:textures.get(item.texture) ?? null},
+      const geometry=new THREE.BufferGeometry();
+      const raw=typed(part(item.positions),Int16Array);
+      geometry.setAttribute('position',new THREE.BufferAttribute(Float32Array.from(raw,value=>value/7000),3));
+      geometry.setAttribute('normal',new THREE.BufferAttribute(typed(part(item.normals),Int8Array),3,true));
+      if (item.bake) geometry.setAttribute('uv',new THREE.BufferAttribute(typed(part(item.bake),Uint16Array),2,true));
+      if (item.source) geometry.setAttribute('sourceUV',new THREE.BufferAttribute(typed(part(item.source),Uint16Array),2,true));
+      geometry.setIndex(new THREE.BufferAttribute(typed(part(item.indices),item.index32 ? Uint32Array : Uint16Array),1));
+      const art = textures.get(item.texture);
+      const material=new THREE.ShaderMaterial({
+        uniforms:{
+          baseColor:{value:new THREE.Color(...item.rgb)},
+          isWater:{value:item.water},
+          hasArtwork:{value:Boolean(art)},
+          surfaceMap:{value:surfaceMap},
+          waterMap:{value:waterMap},
+          artworkMap:{value:art??surfaceMap},
         },
         vertexShader, fragmentShader,
-        vertexColors: true,
-        transparent: item.water,
-        depthWrite: !item.water,
-        side: item.texture || item.water ? THREE.DoubleSide : THREE.FrontSide,
-        toneMapped: false,
+        transparent:item.water,
+        depthWrite:!item.water,
+        side:item.texture || item.water || item.name.startsWith('Giấy') ? THREE.DoubleSide : THREE.FrontSide,
+        toneMapped:false,
       });
-      const mesh = new THREE.Mesh(geometry, material);
-      if (item.water) mesh.renderOrder = 1;
+      material.defaultAttributeValues.sourceUV=[0,0];
+      const mesh=new THREE.Mesh(geometry,material);
+      if (item.water) mesh.renderOrder=1;
       scene.add(mesh);
     }
 
@@ -162,10 +113,7 @@ async function createWebGLView(canvas,context) {
     const direction = new THREE.Vector3();
     const previous = new THREE.Vector3();
     const next = new THREE.Vector3();
-    let lastView;
-    function draw(view) {
-      lastView=view;
-      const {active,value,yaw,pitch}=view;
+    function draw({active,value,yaw,pitch}) {
       const {width,height}=viewport.getBoundingClientRect();
       if (!width || !height) return;
       const aspect = width/height;
@@ -190,7 +138,7 @@ async function createWebGLView(canvas,context) {
         previous.fromArray(meta.tour[i][1]);
         next.fromArray(meta.tour[j][1]);
         direction.lerpVectors(previous, next, frame-i).normalize();
-        const frameWidth = projected.hero?.field[0] ?? .8571429;
+        const frameWidth = meta.anchors[0].field[0];
         angle = camera.aspect < 1 ? 71 : THREE.MathUtils.radToDeg(2*Math.atan(frameWidth/camera.aspect));
       }
       camera.fov = angle + (camera.aspect < .95 && active && active !== 'entry' ? 12 : 0);
@@ -200,13 +148,11 @@ async function createWebGLView(canvas,context) {
       const tilt = Math.max(-1.2,Math.min(1.2,Math.asin(direction.y)+pitch));
       direction.set(Math.sin(heading)*Math.cos(tilt),Math.sin(tilt),-Math.cos(heading)*Math.cos(tilt));
       camera.lookAt(target.copy(camera.position).add(direction));
-      projected.select(active,value,camera.position);
       renderer.render(scene,camera);
     }
 
     const initial={active:'entry',value:0,yaw:0,pitch:0};
     draw(initial);
-    refreshLight=()=>draw(lastView??initial);
     return {element:renderer.domElement, mode:'3d', draw};
 }
 
