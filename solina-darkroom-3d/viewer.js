@@ -1,5 +1,5 @@
-import {createPanoramaView} from './panorama.js?v=4';
-import {vertexShader, fragmentShader} from './surfaces.js';
+import {createPanoramaView} from './panorama.js?v=6';
+import {vertexShader, fragmentShader} from './surfaces.js?v=6';
 
 const node = id => document.getElementById(id);
 const stage = node('stage');
@@ -26,7 +26,7 @@ async function importThree() {
 }
 
 async function fetchScene() {
-  const response = await fetch('./phong-toi-net.bin');
+  const response = await fetch('./phong-toi-gallery.bin');
   if (!response.ok || !response.body) throw new Error('3D model could not be loaded');
   const stream = response.body.pipeThrough(new DecompressionStream('gzip'));
   const data = await new Response(stream).arrayBuffer();
@@ -45,10 +45,10 @@ function updateButton(active) {
 }
 
 async function createWebGLView(canvas,context) {
-    const [THREE, model, mapResponse, waterResponse] = await Promise.all([
-      importThree(),fetchScene(),fetch('./be-mat.webp'),fetch('./mat-nuoc.webp'),
+    const [THREE, model, mapResponse] = await Promise.all([
+      importThree(),fetchScene(),fetch('./be-mat-gallery.webp'),
     ]);
-    if (!mapResponse.ok || !waterResponse.ok) throw new Error('Không tải được bề mặt của phòng');
+    if (!mapResponse.ok) throw new Error('Không tải được bề mặt của phòng');
     const renderer = new THREE.WebGLRenderer({canvas,context,antialias:true});
     renderer.setPixelRatio(Math.min(Math.max(1.2,window.devicePixelRatio || 1),1.75));
     renderer.debug.onShaderError=(gl,program,vertex,fragment) => {
@@ -65,17 +65,21 @@ async function createWebGLView(canvas,context) {
       const texture=new THREE.Texture(bitmap);
       texture.flipY=false;
       texture.colorSpace=THREE.SRGBColorSpace;
-      texture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+      texture.anisotropy=Math.min(16,renderer.capabilities.getMaxAnisotropy());
       texture.needsUpdate=true;
       return texture;
     }
 
-    const [surfaceMap, waterMap] = await Promise.all([
-      mapResponse.blob().then(unpackTexture),waterResponse.blob().then(unpackTexture),
-    ]);
+    const surfaceMap=await unpackTexture(await mapResponse.blob());
     const textures=new Map();
     await Promise.all(Object.entries(meta.textures).map(async ([name,range]) => {
       textures.set(name,await unpackTexture(new Blob([part(range)],{type:'image/jpeg'})));
+    }));
+
+    await Promise.all(meta.groups.filter(item => item.photo).map(async item => {
+      const response=await fetch('./anh-treo/'+item.photo);
+      if (!response.ok) throw new Error('Không tải được ảnh treo '+item.photo);
+      textures.set(item.photo,await unpackTexture(await response.blob()));
     }));
 
     for (const item of meta.groups) {
@@ -93,7 +97,6 @@ async function createWebGLView(canvas,context) {
           isWater:{value:item.water},
           hasArtwork:{value:Boolean(art)},
           surfaceMap:{value:surfaceMap},
-          waterMap:{value:waterMap},
           artworkMap:{value:art??surfaceMap},
         },
         vertexShader, fragmentShader,

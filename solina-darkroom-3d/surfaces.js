@@ -20,7 +20,6 @@ export const fragmentShader = `
   uniform bool hasArtwork;
   uniform sampler2D surfaceMap;
   uniform sampler2D artworkMap;
-  uniform sampler2D waterMap;
   varying vec3 surface;
   varying vec3 positionInRoom;
   varying vec2 lightUV;
@@ -38,29 +37,25 @@ export const fragmentShader = `
     if (isWater) {
       vec2 p=positionInRoom.xz;
       n=normalize(n+vec3(
-        .011*sin(p.x*116.+p.y*87.)+.016*sin(p.y*49.-p.x*59.),
+        .008*sin(p.x*51.+p.y*25.),
         0.,
-        .010*cos(p.y*98.-p.x*38.)+.009*cos(p.y*71.+p.x*25.)));
+        .007*sin(p.y*47.-p.x*21.)));
       vec3 sight=normalize(cameraPosition-positionInRoom);
-      float fresnel=pow(1.-max(0.,dot(n,sight)),4.);
-      float reflection=lampReflection(n,sight,vec3(1.24,1.70,1.27),92.);
-      reflection+=lampReflection(n,sight,vec3(1.23,1.92,-.63),92.);
-      reflection+=lampReflection(n,sight,vec3(1.24,2.06,-2.05),92.);
-      float tile=positionInRoom.z>1.4 ? 0. : positionInRoom.z>.41 ? 1. : positionInRoom.z>-.57 ? 2. : 3.;
-      float center=tile<.5 ? 1.89 : tile<1.5 ? .91 : tile<2.5 ? -.075 : -1.07;
-      vec2 local=vec2((p.x-1.067)/.465+.5,(center-p.y)/.665+.5);
-      vec2 sampleUV=(vec2(mod(tile,2.),floor(tile*.5))+clamp(local,0.,1.)*.96+.02)*.5;
-      vec3 value=texture2D(waterMap,sampleUV).rgb;
-      value=mix(value,vec3(.31,.235,.14),fresnel*.16)+vec3(.20,.15,.10)*reflection;
-      gl_FragColor=vec4(value, .985);
+      float fresnel=pow(1.-clamp(dot(n,sight),0.,1.),4.);
+      float reflection=lampReflection(n,sight,vec3(1.24,1.70,1.27),155.);
+      reflection+=lampReflection(n,sight,vec3(1.23,1.92,-.63),155.);
+      reflection+=lampReflection(n,sight,vec3(1.24,2.06,-2.05),155.);
+      vec3 clearTint=vec3(.31,.36,.38);
+      vec3 lightTint=vec3(.87,.77,.58);
+      float highlight=clamp(reflection*1.18,0.,.8);
+      float opacity=.045+.36*fresnel+.60*highlight;
+      gl_FragColor=vec4(mix(clearTint,lightTint,highlight),clamp(opacity,.045,.78));
     } else {
       vec4 sampleColor=texture2D(surfaceMap,lightUV);
       vec3 tint=mix(baseColor*.62,sampleColor.rgb,sampleColor.a);
       if (hasArtwork) {
-        vec3 fine=texture2D(artworkMap,artUV).rgb;
-        vec3 soft=texture2D(artworkMap,artUV,1.65).rgb;
-        // Keep the print's own small lettering and film grain above the baked illumination.
-        tint*=mix(vec3(1.),clamp((fine+.105)/(soft+.105),.7,1.45),.61);
+        vec3 printColor=texture2D(artworkMap,artUV).rgb;
+        tint*=pow(clamp(printColor/.78, .0, 1.29),vec3(.82));
       }
       gl_FragColor=vec4(tint,1.);
     }

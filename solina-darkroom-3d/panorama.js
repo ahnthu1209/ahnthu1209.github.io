@@ -3,7 +3,7 @@ const available = new Set([...route,'bacs','tirages']);
 
 async function loadCube(name) {
   const image = new Image();
-  image.src='./panorama/'+name+'-net.webp';
+  image.src='./panorama/'+name+'-gallery.webp';
   await image.decode();
   const size=image.naturalWidth/3;
   if (!Number.isInteger(size) || image.naturalHeight!==size*2) throw new Error('Ảnh 360° không hợp lệ');
@@ -57,7 +57,7 @@ export async function createPanoramaView(viewport) {
     if (!available.has(name) || frames.has(name) || loading.has(name)) return;
     const task=loadCube(name).then(frame=>{
       frames.set(name,frame);
-      while (frames.size>4) {
+      while (frames.size>3) {
         const candidate=[...frames.keys()].find(key=>key!==currentName&&key!==name);
         frames.delete(candidate);
       }
