@@ -94,7 +94,38 @@ export function enableAvatar(director){
   const adjustFields=['x','y','zoom'].map(key=>get('adjust-'+key));
   let subject, original, index=0, adjust=defaults(), record, readyImage;
   let working=false, awaitingNumber=false, busyFile=false, renderKey=0, downloadURL;
-  let captionReset, edgeOriginal, stroke, pendingFrame;
+  let captionReset, edgeOriginal, stroke, pendingFrame, resultFile;
+  const downloadPhoto=get('download-photo'), openPhoto=get('open-photo');
+  const saveDialog=get('photo-save'), saveImage=get('photo-save-image');
+  const saveDownload=get('photo-save-download');
+  const touchDevice=matchMedia('(pointer: coarse)').matches
+    || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+    || (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+
+  function showSavePreview(){
+    if(!downloadURL||saveDialog.open)return;
+    if(!saveDialog.showModal){window.location.assign(downloadURL);return;}
+    saveImage.src=downloadURL;
+    saveDownload.href=downloadURL;
+    saveDownload.download=resultFile.name;
+    saveDialog.showModal();
+  }
+  openPhoto.onclick=showSavePreview;
+  downloadPhoto.addEventListener('click',async event=>{
+    if(!touchDevice||!resultFile||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
+    event.preventDefault();
+    const file=resultFile;
+    const data={files:[file]};
+    try {
+      if(navigator.share&&navigator.canShare?.(data)){
+        await navigator.share(data);
+        return;
+      }
+    } catch(error) {
+      if(error.name==='AbortError')return;
+    }
+    if(resultFile===file)showSavePreview();
+  });
   const erase=get('erase-edge'), restore=get('restore-edge'), undo=get('undo-edge');
   let edgeMode;
   const buttons=styles.map((style,i)=>{
@@ -225,19 +256,21 @@ export function enableAvatar(director){
     restore.hidden=!original;
     get('portrait-intro').hidden=!!subject||!!readyImage||working;
     get('restart-photo').hidden=(!subject&&!readyImage)||working||awaitingNumber;
-    get('download-photo').hidden=!readyImage;
+    downloadPhoto.hidden=!readyImage;
+    openPhoto.hidden=!readyImage||!touchDevice;
     get('result-number').hidden=!readyImage;
     get('retry-number').hidden=!awaitingNumber||working;
     get('resume-photo').hidden=!record||!!subject||!!readyImage||working;
   }
   async function showResult(canvas,number,png,style){
+    resultFile=new File([png||await toBlob(canvas)],'SOLINA-Giam-Tuyen-'+number+'.png',{type:'image/png'});
+    if(downloadURL)URL.revokeObjectURL(downloadURL);
+    downloadURL=URL.createObjectURL(resultFile);
+    downloadPhoto.href=downloadURL;
+    downloadPhoto.download=resultFile.name;
+    downloadPhoto.textContent=touchDevice?'Lưu ảnh PNG':'Tải ảnh PNG';
     readyImage=canvas;
     setPreview(canvas);
-    if(downloadURL)URL.revokeObjectURL(downloadURL);
-    downloadURL=URL.createObjectURL(png||await toBlob(canvas));
-    const link=get('download-photo');
-    link.href=downloadURL;
-    link.download='SOLINA-Giam-Tuyen-'+number+'.png';
     get('result-digits').textContent=number;
     get('result-caption').textContent=captions[style]||'';
     get('copy-caption').textContent='Sao chép caption';
@@ -322,7 +355,15 @@ export function enableAvatar(director){
   };
   get('restart-photo').onclick=async()=>{
     if(working)return;
-    if(downloadURL){URL.revokeObjectURL(downloadURL);downloadURL=null;}
+    if(downloadURL){
+      saveDialog.close?.();
+      saveImage.removeAttribute('src');
+      saveDownload.removeAttribute('href');
+      downloadPhoto.removeAttribute('href');
+      URL.revokeObjectURL(downloadURL);
+      downloadURL=null;
+      resultFile=null;
+    }
     freshEdges();record=null;readyImage=null;subject=null;original=null;index=0;adjust=defaults();
     director.reset();updateSliders();refreshPanel();
     tell('');setCue('');

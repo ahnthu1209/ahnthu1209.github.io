@@ -10,8 +10,8 @@
   <link rel="preload" href="./cong/loi-vao.webp" as="image">
   <link rel="preload" href="./cong/canh-cong.webp" as="image">
   <link rel="stylesheet" href="./style.css?v=18">
-  <link rel="stylesheet" href="./avatar.css?v=14">
-  <script type="module" src="./viewer.js?v=18"></script>
+  <link rel="stylesheet" href="./avatar.css?v=20">
+  <script type="module" src="./viewer.js?v=20"></script>
 </head>
 <body>
   <main class="experience" aria-label="Phòng rửa ảnh Solina">
@@ -89,11 +89,22 @@
       </div>
       <div class="avatar-actions">
         <a id="download-photo" class="enter" download hidden>Tải ảnh PNG</a>
+        <button id="open-photo" type="button" hidden>Mở ảnh để lưu</button>
         <button id="restart-photo" type="button" hidden>Chọn ảnh khác</button>
         <button id="resume-photo" type="button" hidden>Tiếp tục rửa ảnh</button>
         <button id="retry-number" type="button" hidden>Thử lại</button>
       </div>
     </section>
+
+    <dialog class="photo-save" id="photo-save" aria-labelledby="photo-save-title">
+      <div class="photo-save-header">
+        <h2 id="photo-save-title">Lưu ảnh Solina</h2>
+        <form method="dialog"><button type="submit" autofocus>Đóng</button></form>
+      </div>
+      <p>Nhấn giữ ảnh rồi chọn lưu hoặc tải hình ảnh xuống.</p>
+      <img id="photo-save-image" alt="Ảnh Solina đã rửa">
+      <a class="enter" id="photo-save-download" download>Tải tệp PNG</a>
+    </dialog>
 
     <div class="gate" id="gate">
       <div class="gate-scene" aria-hidden="true">

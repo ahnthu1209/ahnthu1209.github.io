@@ -73,3 +73,17 @@
 .edge-editor button { min-height:34px; font-size:.82rem; padding:.34rem .58rem; }
 .edge-editor [aria-pressed=true] { border-color:var(--gold); background:#4a3826; }
 #portrait-preview.editing-edge { cursor:crosshair; touch-action:none; }
+
+.photo-save {
+  position:fixed; inset:0; margin:auto; width:min(90vw,510px);
+  max-height:calc(100dvh - 32px); padding:14px; overflow:auto;
+  background:#211a13; color:var(--ink); border:1px solid #5f4e3a; border-radius:4px;
+}
+.photo-save::backdrop { background:#120e0bd9; }
+.photo-save-header { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.photo-save h2 { font:normal 1.3rem Georgia,serif; margin:0; }
+.photo-save p { font-size:.9rem; margin:.55rem 0; color:var(--quiet); }
+.photo-save img {
+  display:block; width:min(100%,60dvh); height:auto; margin:0 auto .75rem;
+  -webkit-touch-callout:default;
+}
