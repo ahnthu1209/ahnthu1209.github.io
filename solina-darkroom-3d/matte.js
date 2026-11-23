@@ -44,15 +44,23 @@ export async function portraitMask(surface,loadScript) {
 
 export function refineAlpha(alpha,width,height) {
   const size=width*height;
-  const visited=new Uint8Array(size), queue=new Int32Array(size);
+  const core=new Uint8Array(size),visited=new Uint8Array(size),queue=new Int32Array(size);
+  const inset=Math.max(2,Math.round(Math.min(width,height)/190));
+  for(let i=0;i<size;i++){
+    if(alpha[i]<.56)continue;
+    const x=i%width,y=Math.floor(i/width);
+    if((x>=inset&&alpha[i-inset]<.51)||(x+inset<width&&alpha[i+inset]<.51)||
+       (y>=inset&&alpha[i-inset*width]<.51)||(y+inset<height&&alpha[i+inset*width]<.51))continue;
+    core[i]=1;
+  }
   let main=new Int32Array();
   // Isolate the primary person and retain the translucent hair around it.
   for(let i=0;i<size;i++){
-    if(visited[i]||alpha[i]<.51)continue;
+    if(visited[i]||!core[i])continue;
     let read=0,write=1;
     queue[0]=i;visited[i]=1;
     function visit(offset){
-      if(!visited[offset]&&alpha[offset]>=.51){queue[write++]=offset;visited[offset]=1;}
+      if(!visited[offset]&&core[offset]){queue[write++]=offset;visited[offset]=1;}
     }
     while(read<write){
       const at=queue[read++],column=at%width;
@@ -64,17 +72,19 @@ export function refineAlpha(alpha,width,height) {
     if(write>main.length)main=queue.slice(0,write);
   }
   if(main.length<size*.006)throw new Error('Chưa tìm thấy chân dung rõ.');
-  const near=new Uint8Array(size);
-  for(const i of main){
-    near[i]=1;
-    if(i%width)near[i-1]=1;
-    if(i%width<width-1)near[i+1]=1;
-    if(i>=width)near[i-width]=1;
-    if(i+width<size)near[i+width]=1;
-  }
-  const clean=new Float32Array(size);
+  const distance=new Uint8Array(size).fill(32);
+  for(const i of main)distance[i]=0;
   for(let i=0;i<size;i++){
-    if(!near[i]&&!near[i-width]&&!near[i+width]&&!(i%width&&near[i-1])&&!(i%width<width-1&&near[i+1]))continue;
+    if(i%width)distance[i]=Math.min(distance[i],distance[i-1]+1);
+    if(i>=width)distance[i]=Math.min(distance[i],distance[i-width]+1);
+  }
+  for(let i=size-1;i>=0;i--){
+    if(i%width<width-1)distance[i]=Math.min(distance[i],distance[i+1]+1);
+    if(i+width<size)distance[i]=Math.min(distance[i],distance[i+width]+1);
+  }
+  const clean=new Float32Array(size), reach=inset+3;
+  for(let i=0;i<size;i++){
+    if(distance[i]>reach)continue;
     const value=Math.max(0,Math.min(1,(alpha[i]-.12)/.82));
     clean[i]=value*value*(3-2*value);
   }
