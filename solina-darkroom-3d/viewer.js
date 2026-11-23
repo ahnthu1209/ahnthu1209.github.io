@@ -1,6 +1,6 @@
 import {enableAvatar} from './avatar.js?v=18';
 import {createPrintScene} from './print-scene.js?v=17';
-import {createPanoramaView} from './panorama.js?v=18';
+import {createPanoramaView} from './panorama.js?v=19';
 import {vertexShader, fragmentShader} from './surfaces.js?v=18';
 
 import {createOrientationControl} from './orientation.js?v=17';
@@ -50,7 +50,7 @@ async function importThree() {
 }
 
 async function fetchScene() {
-  const response = await fetch('./phong-toi-gallery.bin');
+  const response = await fetch('./phong-toi-gallery.bin?v=19');
   if (!response.ok || !response.body) throw new Error('3D model could not be loaded');
   const stream = response.body.pipeThrough(new DecompressionStream('gzip'));
   const data = await new Response(stream).arrayBuffer();
@@ -122,7 +122,7 @@ async function createWebGLView(canvas,context) {
           hasArtwork:{value:Boolean(art)},
           cleanSurface:{value:/^(Gạch men|Mạch gạch|Mặt bàn|Cạnh bàn|Gỗ mặt|Nhựa màu ngà|Viền bản in|Giấy bạc|Nhôm của)/.test(item.name)},
           grout:{value:item.name==='Mạch gạch'},
-          paperPhoto:{value:false},
+          paperPhoto:{value:Boolean(item.printPhoto)},
           surfaceMap:{value:surfaceMap},
           artworkMap:{value:art??surfaceMap},
         },
