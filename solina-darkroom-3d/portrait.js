@@ -1,5 +1,3 @@
-const visionRoot='https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304';
-const modelURL='https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/latest/selfie_multiclass_256x256.tflite';
 let model;
 const canvas=(w,h=w)=>Object.assign(document.createElement('canvas'),{width:w,height:h});
 const context=(surface,options)=>surface.getContext('2d',options);
@@ -9,14 +7,23 @@ const loadImage=async src=>{
   await image.decode();
   return image;
 };
-const assets=async ()=>{
-  const script=await import(visionRoot+'/+esm');
-  const files=await script.FilesetResolver.forVisionTasks(visionRoot+'/wasm');
-  return script.ImageSegmenter.createFromOptions(files,{
-    baseOptions:{modelAssetPath:modelURL,delegate:'CPU'},runningMode:'IMAGE',
-    outputCategoryMask:false,outputConfidenceMasks:true,
+function script(src){
+  return new Promise((resolve,reject)=>{
+    const tag=document.createElement('script');
+    tag.src=src;tag.onload=resolve;
+    tag.onerror=()=>{tag.remove();reject(new Error('Tách nền'));};
+    document.head.append(tag);
   });
-};
+}
+
+async function assets(){
+  const root='https://cdn.jsdelivr.net/npm/';
+  if(!window.tf) await script(root+'@tensorflow/tfjs@4.22.0/dist/tf.min.js');
+  await window.tf.setBackend('cpu');
+  await window.tf.ready();
+  if(!window.bodyPix) await script(root+'@tensorflow-models/body-pix@2.2.1/dist/body-pix.min.js');
+  return window.bodyPix.load({architecture:'MobileNetV1',outputStride:16,multiplier:.75,quantBytes:2});
+}
 
 export async function portraitFrom(file,notify) {
   if(file.size>30*1024*1024) throw new Error('Ảnh cần nhẹ hơn 30 MB.');
@@ -42,18 +49,17 @@ export async function portraitFrom(file,notify) {
     const w=surface.width*ratio,h=surface.height*ratio,x=(512-w)/2,y=(512-h)/2;
     const m=context(maskArea);
     m.fillStyle='#7d7d7d';m.fillRect(0,0,512,512);m.drawImage(surface,x,y,w,h);
-    segmenter.segment(maskArea,result=>{
-      const bg=result.confidenceMasks[0];
-      const mask=canvas(bg.width,bg.height), brush=context(mask);
-      const values=bg.getAsFloat32Array();
-      const data=brush.createImageData(mask.width,mask.height);
-      for(let i=0;i<values.length;i++){
-        const v=Math.max(0,Math.min(1,((1-values[i])-.18)/.70));
-        data.data[i*4+3]=255*v*v*(3-2*v);
-      }
-      brush.putImageData(data,0,0);
-      applyMask(ctx,surface,mask,x,y,w,h);
+    const result=await segmenter.segmentPerson(maskArea,{
+      internalResolution:'medium',segmentationThreshold:.62,maxDetections:1,scoreThreshold:.25,nmsRadius:20,
     });
+    const mask=canvas(512),brush=context(mask);
+    const data=brush.createImageData(512,512);
+    for(let i=0;i<result.data.length;i++) data.data[i*4+3]=result.data[i]*255;
+    brush.putImageData(data,0,0);
+    const softened=canvas(512), edge=context(softened);
+    edge.filter='blur(.85px)';
+    edge.drawImage(mask,0,0);
+    applyMask(ctx,surface,softened,x,y,w,h);
   }
   return cropPortrait(surface);
 }

@@ -1,4 +1,4 @@
-import {enableAvatar} from './avatar.js?v=7';
+import {enableAvatar} from './avatar.js?v=8';
 import {createPrintScene} from './print-scene.js?v=7';
 import {createPanoramaView} from './panorama.js?v=6';
 import {vertexShader, fragmentShader} from './surfaces.js?v=6';
