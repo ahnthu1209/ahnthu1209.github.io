@@ -1,3 +1,5 @@
+import {createPanoramaView} from './panorama.js';
+
 const node = id => document.getElementById(id);
 const stage = node('stage');
 const viewport = node('view');
@@ -96,13 +98,9 @@ function updateButton(active) {
   spots.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.spot === active)));
 }
 
-async function start() {
-  enter.disabled = true;
-  status.textContent = 'Đang tải mô hình 3D…';
-  let renderer;
-  try {
+async function createWebGLView(canvas,context) {
     const [THREE, model] = await Promise.all([importThree(), fetchScene()]);
-    renderer = new THREE.WebGLRenderer({antialias: true, powerPreference: 'high-performance'});
+    const renderer = new THREE.WebGLRenderer({canvas,context,antialias:true});
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.65));
     const scene = new THREE.Scene();
     scene.background = new THREE.Color('#18140f');
@@ -148,25 +146,20 @@ async function start() {
       scene.add(mesh);
     }
 
-    viewport.append(renderer.domElement);
     const up = new THREE.Vector3(0,1,0);
     const target = new THREE.Vector3();
     const direction = new THREE.Vector3();
     const previous = new THREE.Vector3();
     const next = new THREE.Vector3();
-    let value = 0;
-    let yaw = 0;
-    let pitch = 0;
-    let active = 'entry';
-    let playing = false;
-    let raf = 0;
-    let startAt = 0;
-    let pointer = null;
-    function formatTime(fraction) {
-      return `0:${String(Math.min(10,Math.floor(fraction * 10))).padStart(2,'0')} / 0:10`;
-    }
-
-    function draw() {
+    function draw({active,value,yaw,pitch}) {
+      const {width,height}=viewport.getBoundingClientRect();
+      if (!width || !height) return;
+      const aspect = width/height;
+      if (camera.aspect!==aspect || renderer.domElement.clientWidth!==width || 
+          renderer.domElement.width!==Math.floor(width*renderer.getPixelRatio())) {
+        camera.aspect=aspect;
+        renderer.setSize(width,height,false);
+      }
       let angle;
       if (active === 'trays' || active === 'prints') {
         const p = meta.detail[active === 'trays' ? 0 : 1];
@@ -187,7 +180,7 @@ async function start() {
       }
       camera.fov = angle + (camera.aspect < .95 && active && active !== 'entry' ? 12 : 0);
       camera.updateProjectionMatrix();
-      direction.applyAxisAngle(up,yaw);
+      direction.applyAxisAngle(up,active === 'entry' ? Math.max(-.93,Math.min(.93,yaw)) : yaw);
       const heading = Math.atan2(direction.x,-direction.z);
       const tilt = Math.max(-1.2,Math.min(1.2,Math.asin(direction.y)+pitch));
       direction.set(Math.sin(heading)*Math.cos(tilt),Math.sin(tilt),-Math.cos(heading)*Math.cos(tilt));
@@ -195,14 +188,39 @@ async function start() {
       renderer.render(scene,camera);
     }
 
-    function resize() {
-      const {width,height} = viewport.getBoundingClientRect();
-      camera.aspect = width/height;
-      renderer.setSize(width,height,false);
-      draw();
+    return {element:renderer.domElement, mode:'3d', draw};
+}
+
+async function start() {
+  enter.disabled = true;
+  status.textContent = 'Đang tải mô hình 3D…';
+  try {
+    const canvas=document.createElement('canvas');
+    const context=canvas.getContext('webgl2',{alpha:false,antialias:true,powerPreference:'high-performance'});
+    let display;
+    if (context) {
+      try { display=await createWebGLView(canvas,context); }
+      catch (error) { console.warn('Đang chuyển sang chế độ 360°',error); }
     }
-    const resizeObserver = new ResizeObserver(resize);
-    resizeObserver.observe(viewport);
+    if (!display) display=await createPanoramaView(viewport);
+    viewport.replaceChildren(display.element);
+    if (display.mode==='panorama') {
+      node('hint').textContent='Chế độ 360° · Kéo để nhìn quanh. Chọn một góc nhìn hoặc phát hành trình.';
+    }
+    let value = 0;
+    let yaw = 0;
+    let pitch = 0;
+    let active = 'entry';
+    let playing = false;
+    let raf = 0;
+    let startAt = 0;
+    let pointer = null;
+    function formatTime(fraction) {
+      return `0:${String(Math.min(10,Math.floor(fraction * 10))).padStart(2,'0')} / 0:10`;
+    }
+
+    function draw() { display.draw({active,value,yaw,pitch}); }
+    new ResizeObserver(draw).observe(viewport);
 
     function setValue(nextValue) {
       value = Math.min(1,Math.max(nextValue,0));
@@ -266,7 +284,7 @@ async function start() {
     viewport.addEventListener('pointermove', event => {
       if (!pointer || pointer.id !== event.pointerId) return;
       yaw += (event.clientX-pointer.x)*.004;
-      pitch = THREE.MathUtils.clamp(pitch+(event.clientY-pointer.y)*.004,-1.12,1.12);
+      pitch = Math.max(-1.12,Math.min(1.12,pitch+(event.clientY-pointer.y)*.004));
       pointer.x = event.clientX;
       pointer.y = event.clientY;
       draw();
@@ -297,14 +315,13 @@ async function start() {
       });
     }
 
-    resize();
+    draw();
     stage.classList.add('ready');
     node('controls').hidden = false;
     node('hint').hidden = false;
     viewport.focus({preventScroll:true});
   } catch (error) {
     console.error(error);
-    renderer?.dispose();
     status.textContent = 'Chưa mở được mô hình 3D trên trình duyệt này. Bạn vẫn có thể xem ảnh toàn cảnh.';
     enter.textContent = 'Thử mở lại';
     enter.disabled = false;
