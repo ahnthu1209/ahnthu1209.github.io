@@ -1,4 +1,4 @@
-import {enableAvatar} from './avatar.js?v=12';
+import {enableAvatar} from './avatar.js?v=13';
 import {createPrintScene} from './print-scene.js?v=11';
 import {createPanoramaView} from './panorama.js?v=6';
 import {vertexShader, fragmentShader} from './surfaces.js?v=6';
@@ -175,11 +175,11 @@ async function createWebGLView(canvas,context) {
 
 async function start() {
   enter.disabled = true;
-  gate.classList.add('opening');
+  // Prepare the scene before moving the gate so it never hangs half-open
+  // while large 3D assets are still downloading.
   const reduced=matchMedia('(prefers-reduced-motion: reduce)');
   const waiting=ms=>new Promise(resolve=>setTimeout(resolve,reduced.matches?0:ms));
-  const swing=waiting(1400);
-  const notice=setTimeout(()=>{status.textContent='Đang mở phòng 3D…';},1700);
+  const notice=setTimeout(()=>{status.textContent='Đang chuẩn bị phòng 3D…';},650);
   try {
     const canvas=document.createElement('canvas');
     const context=canvas.getContext('webgl2',{alpha:false,antialias:true,powerPreference:'high-performance'});
@@ -403,11 +403,14 @@ async function start() {
     };
     draw();
     stage.classList.add('ready');
-    await swing;
+    clearTimeout(notice);
+    status.textContent='';
+    gate.classList.add('opening');
+    await waiting(720);
     clearTimeout(notice);
     status.textContent='';
     gate.classList.add('passing');
-    await waiting(680);
+    await waiting(520);
     gate.hidden=true;
     viewport.inert=false;
     node('controls').hidden=false;
