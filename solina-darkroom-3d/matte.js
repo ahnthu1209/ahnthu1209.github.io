@@ -34,7 +34,8 @@ export async function portraitMask(surface,loadScript) {
     const result=await net.run({input});
     output=result.output;
     const alpha=new Float32Array(output.data);
-    trimFoliage(alpha,rgb,width,height);
+    // Do not subtract pixels based on green hues: clothing, skin shadows and
+    // reflected light must never be mistaken for background foliage.
     return {width,height,alpha};
   } finally {
     input.dispose();
@@ -42,51 +43,68 @@ export async function portraitMask(surface,loadScript) {
   }
 }
 
+// Keep multiple people and lightly feather silhouettes instead of eroding the
+// mask down to a single hard-confidence core.  The old approach removed legs,
+// thin clothing and the second person in couple portraits.
 export function refineAlpha(alpha,width,height) {
   const size=width*height;
-  const core=new Uint8Array(size),visited=new Uint8Array(size),queue=new Int32Array(size);
-  const inset=Math.max(2,Math.round(Math.min(width,height)/190));
+  const threshold=.14;
+  const labels=new Int32Array(size);
+  const queue=new Int32Array(size);
+  const components=[];
   for(let i=0;i<size;i++){
-    if(alpha[i]<.56)continue;
-    const x=i%width,y=Math.floor(i/width);
-    if((x>=inset&&alpha[i-inset]<.51)||(x+inset<width&&alpha[i+inset]<.51)||
-       (y>=inset&&alpha[i-inset*width]<.51)||(y+inset<height&&alpha[i+inset*width]<.51))continue;
-    core[i]=1;
-  }
-  let main=new Int32Array();
-  // Isolate the primary person and retain the translucent hair around it.
-  for(let i=0;i<size;i++){
-    if(visited[i]||!core[i])continue;
-    let read=0,write=1;
-    queue[0]=i;visited[i]=1;
-    function visit(offset){
-      if(!visited[offset]&&core[offset]){queue[write++]=offset;visited[offset]=1;}
-    }
+    if(labels[i]||alpha[i]<threshold)continue;
+    const label=components.length+1;
+    let read=0,write=1,strong=0;
+    queue[0]=i; labels[i]=label;
     while(read<write){
-      const at=queue[read++],column=at%width;
-      if(column)visit(at-1);
-      if(column<width-1)visit(at+1);
-      if(at>=width)visit(at-width);
-      if(at+width<size)visit(at+width);
+      const at=queue[read++],x=at%width;
+      if(alpha[at]>.54)strong++;
+      const y=(at-x)/width;
+      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+        if(!dx&&!dy)continue;
+        const nx=x+dx,ny=y+dy;
+        if(nx<0||nx>=width||ny<0||ny>=height)continue;
+        const j=ny*width+nx;
+        if(!labels[j]&&alpha[j]>=threshold){
+          labels[j]=label;queue[write++]=j;
+        }
+      }
     }
-    if(write>main.length)main=queue.slice(0,write);
+    components.push({label,count:write,strong});
   }
-  if(main.length<size*.006)throw new Error('Chưa tìm thấy chân dung rõ.');
-  const distance=new Uint8Array(size).fill(32);
-  for(const i of main)distance[i]=0;
+  components.sort((a,b)=>b.count-a.count);
+  if(!components.length||components[0].count<size*.005)
+    throw new Error('Chưa tìm thấy chân dung rõ.');
+  const primary=components[0].count;
+  // Retain up to three substantial figures/components (including couples).
+  // Tiny disconnected background specks still get rejected.
+  const allowed=new Uint8Array(components.length+1);
+  let kept=0;
+  for(const part of components){
+    if(kept>=5)break;
+    if(part.count<Math.max(size*.0018,primary*.055))continue;
+    if(part.strong<Math.max(20,part.count*.06))continue;
+    allowed[part.label]=1;kept++;
+  }
+  if(!kept)allowed[components[0].label]=1;
+  const clean=new Float32Array(size);
   for(let i=0;i<size;i++){
-    if(i%width)distance[i]=Math.min(distance[i],distance[i-1]+1);
-    if(i>=width)distance[i]=Math.min(distance[i],distance[i-width]+1);
-  }
-  for(let i=size-1;i>=0;i--){
-    if(i%width<width-1)distance[i]=Math.min(distance[i],distance[i+1]+1);
-    if(i+width<size)distance[i]=Math.min(distance[i],distance[i+width]+1);
-  }
-  const clean=new Float32Array(size), reach=inset+3;
-  for(let i=0;i<size;i++){
-    if(distance[i]>reach)continue;
-    const value=Math.max(0,Math.min(1,(alpha[i]-.12)/.82));
+    if(!allowed[labels[i]])continue;
+    // Boost partially transparent fabric and extremities, but keep a
+    // soft edge for hair strands rather than clipping them completely.
+    const value=Math.max(0,Math.min(1,(alpha[i]-.055)/.55));
     clean[i]=value*value*(3-2*value);
+  }
+  // Restore fine low-confidence pixels immediately adjacent to a retained
+  // silhouette. This is a 1px outward feather, not destructive erosion.
+  for(let y=1;y<height-1;y++)for(let x=1;x<width-1;x++){
+    const i=y*width+x;
+    if(clean[i]||alpha[i]<.065)continue;
+    if(allowed[labels[i-1]]||allowed[labels[i+1]]||
+       allowed[labels[i-width]]||allowed[labels[i+width]]){
+      clean[i]=Math.min(.30,alpha[i]*1.7);
+    }
   }
   return clean;
 }
@@ -97,7 +115,7 @@ export function removeEdgeColor(pixels,alpha,width,height) {
   for(let y=0;y<height;y++)for(let x=0;x<width;x++){
     const offset=(y*width+x)*4;
     const a=alpha[offset+3]/255;
-    if(a<=.08||a>=.98){pixels[offset+3]=alpha[offset+3];continue;}
+    if(a<=.08||a>=.72){pixels[offset+3]=alpha[offset+3];continue;}
     const sum=[0,0,0]; let count=0;
     for(const [dx,dy] of rays){
       for(let step=radius;step<=radius*4;step+=radius){
@@ -111,63 +129,13 @@ export function removeEdgeColor(pixels,alpha,width,height) {
       }
     }
     if(count>=2){
-      const mix=Math.min(.58,1-a)/Math.max(.36,a);
+      const mix=Math.min(.23,(.72-a)*.44)/Math.max(.36,a);
       for(let n=0;n<3;n++){
         const correction=(pixels[offset+n]-sum[n]/count)*mix;
-        pixels[offset+n]+=Math.min(49,Math.max(-49,correction));
+        pixels[offset+n]+=Math.min(18,Math.max(-18,correction));
       }
     }
     pixels[offset+3]=alpha[offset+3];
   }
 }
 
-// A small patch of foliage can be assigned to the portrait around the hair
-// and neckline. Only trim isolated, shallow green patches on the matte edge.
-function trimFoliage(alpha,rgb,width,height) {
-  const length=alpha.length, distance=new Uint8Array(length);
-  let personArea=0, top=height, bottom=0;
-  for(let i=0;i<length;i++){
-    distance[i]=alpha[i]>.52?60:0;
-    if(distance[i]){
-      personArea++;
-      const y=Math.floor(i/width);
-      top=Math.min(top,y);bottom=Math.max(bottom,y);
-    }
-  }
-  for(let i=0;i<length;i++){
-    if(distance[i])distance[i]=Math.min(distance[i],(i%width?distance[i-1]:0)+1,(i>=width?distance[i-width]:0)+1);
-  }
-  for(let i=length-1;i>=0;i--){
-    if(distance[i])distance[i]=Math.min(distance[i],(i%width<width-1?distance[i+1]:0)+1,(i+width<length?distance[i+width]:0)+1);
-  }
-  const limit=Math.max(9,Math.round(Math.min(width,height)*.038));
-  const green=new Uint8Array(length), pending=new Int32Array(length);
-  for(let i=0;i<length;i++){
-    const j=i*4;
-    const r=rgb[j],g=rgb[j+1],b=rgb[j+2];
-    if(alpha[i]>.10&&g>r+Math.max(3,g*.045)&&g>b+Math.max(3,g*.042))green[i]=1;
-  }
-  for(let i=0;i<length;i++){
-    if(!green[i])continue;
-    let read=0,write=1,fringe=0,depth=0,left=width,right=0,lower=0;
-    pending[0]=i;green[i]=0;
-    function add(j){
-      if(green[j]){green[j]=0;pending[write++]=j;}
-    }
-    while(read<write){
-      const at=pending[read++],x=at%width;
-      left=Math.min(left,x);right=Math.max(right,x);lower=Math.max(lower,Math.floor(at/width));
-      if(distance[at]<=3)fringe++;
-      depth=Math.max(depth,distance[at]);
-      if(x)add(at-1);
-      if(x<width-1)add(at+1);
-      if(at>=width)add(at-width);
-      if(at+width<length)add(at+width);
-    }
-    const thinEdge=depth<=limit&&fringe>=Math.max(1,write*.035);
-    const betweenHairAndShoulder=right-left<width*.17&&lower<top+(bottom-top)*.69&&fringe>=Math.max(10,write*.012);
-    if(write<personArea*.030&&(thinEdge||betweenHairAndShoulder)){
-      for(let j=0;j<write;j++)alpha[pending[j]]*=.14;
-    }
-  }
-}
