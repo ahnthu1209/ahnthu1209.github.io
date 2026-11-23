@@ -37,6 +37,8 @@
      linear-gradient(90deg,rgba(20,10,4,.22),rgba(20,10,4,0) 22%,rgba(20,10,4,0) 78%,rgba(20,10,4,.22))}
   .fg{opacity:0}
   .fg.on{opacity:1}
+  /* cảnh 4: Chữ chỉ có trong ảnh sạch; tuyệt đối không dựng lại lớp chữ khác */
+  #s4title{display:none!important}
   /* cảnh 4 */
   #s4ppl{position:absolute;left:0;top:0;width:1080px;height:2340px;transform-origin:50% 80%;opacity:0;transform:translateY(34px);transition:opacity .8s ease,transform 1s cubic-bezier(.2,.7,.2,1)}
   #p4.intro1 #s4ppl{opacity:1;transform:none}
@@ -126,7 +128,7 @@
             <canvas id="sea" width="600" height="260" style="position:absolute;left:240px;top:1580px;width:600px;height:260px;pointer-events:none;opacity:0;transition:opacity 1.6s"></canvas>
           </div>
           <div class="pane" id="p4">
-            <img class="layer" data-src="p4.webp" alt="The Art of Welcome">
+            <img class="layer" data-src="p4-welcome-clean-20261123.webp" alt="The Art of WELCOME · Check-in & Welcome Drink">
             <img class="ppl" id="s4ppl" data-src="s4_ppl_c.webp" alt="">
           </div>
           <div class="pane" id="p5">
