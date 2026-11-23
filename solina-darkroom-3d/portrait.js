@@ -1,4 +1,4 @@
-import {portraitMask,refineAlpha,removeEdgeColor} from './matte.js?v=14';
+import {portraitMask,refineAlpha,removeEdgeColor} from './matte.js?v=16';
 let model;
 const canvas=(w,h=w)=>Object.assign(document.createElement('canvas'),{width:w,height:h});
 const context=(surface,options)=>surface.getContext('2d',options);

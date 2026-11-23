@@ -104,24 +104,28 @@ export function refineAlpha(alpha,width,height) {
       clean[i]=Math.min(.30,alpha[i]*1.7);
     }
   }
-  // Close tiny enclosed holes from low-confidence pixels on clothing.
-  // Leave larger openings, such as the gap between an arm and the torso.
-  const maxHole=Math.max(9,Math.round(size*.00018));
+  // Repair weak matte regions surrounded by the subject. Leave exterior
+  // pixels and large clear openings, such as between an arm and the body.
+  const interiorThreshold=.66;
+  const smallHole=Math.max(12,Math.min(size*.006,primary*.025));
+  const weakForegroundHole=Math.max(smallHole,Math.min(size*.035,primary*.13));
   for(let i=0;i<size;i++){
-    if(clean[i]>=.35||labels[i]===-1)continue;
-    let read=0,write=1,atEdge=false;
+    if(clean[i]>=interiorThreshold||labels[i]===-1)continue;
+    let read=0,write=1,atEdge=false,evidence=0;
     queue[0]=i;labels[i]=-1;
     function visit(j){
-      if(clean[j]<.35&&labels[j]!==-1){labels[j]=-1;queue[write++]=j;}
+      if(clean[j]<interiorThreshold&&labels[j]!==-1){labels[j]=-1;queue[write++]=j;}
     }
     while(read<write){
       const at=queue[read++],x=at%width;
+      evidence+=alpha[at];
       if(x>0)visit(at-1);else atEdge=true;
       if(x<width-1)visit(at+1);else atEdge=true;
       if(at>=width)visit(at-width);else atEdge=true;
       if(at+width<size)visit(at+width);else atEdge=true;
     }
-    if(!atEdge&&write<=maxHole){
+    const likelyForeground=write<=weakForegroundHole&&evidence/write>=.13;
+    if(!atEdge&&(write<=smallHole||likelyForeground)){
       for(let j=0;j<write;j++)clean[queue[j]]=1;
     }
   }

@@ -1,4 +1,4 @@
-import {portraitFrom,styles,previewGhost,compose,frameFor,portraitRect} from './portrait.js?v=14';
+import {portraitFrom,styles,previewGhost,compose,frameFor,portraitRect} from './portrait.js?v=16';
 
 const api='https://solina-so-giam-tuyen.ahnthu1209.chatgpt.site/api/issue';
 const get=id=>document.getElementById(id);
