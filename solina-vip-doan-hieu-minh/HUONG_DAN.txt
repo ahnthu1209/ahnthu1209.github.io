@@ -1,0 +1,16 @@
+THIỆP SOLINA · THE AMBASSADOR OF SELECTION
+
+Giải nén toàn bộ file ZIP. Khi đưa lên hosting tĩnh, chọn thư mục
+chứa index.html cùng các thư mục opening, journey và audio làm thư mục gốc.
+
+Để xem trên máy, mở terminal tại thư mục đã giải nén và chạy:
+    python -m http.server 8000
+Sau đó mở http://localhost:8000/ trong trình duyệt. Nếu máy dùng lệnh
+python3, thay python bằng python3. Hai phần của thiệp cần được mở cùng
+một địa chỉ web để chuyển cảnh từ nơ sang cửa.
+
+Bản đóng gói có viền vòm và bố cục các cảnh theo bản gốc, cùng hiệu ứng
+nơ rơi và cửa mở đã sửa.
+
+Piano phát khi chạm mở thiệp. Khi xem clip cốc, piano tắt dần để
+nghe nhạc của clip và trở lại khi clip kết thúc hoặc được bỏ qua.

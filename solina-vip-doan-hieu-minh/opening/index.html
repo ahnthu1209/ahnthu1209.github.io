@@ -1,0 +1,293 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Mở thư mời Solina</title><style>
+  :root{
+    --espresso:#2b1b14; --brown:#69402E; --teal:#052A30; --ivory:#f5efe6;
+    --ease-out:cubic-bezier(.22,1,.36,1); --ease-io:cubic-bezier(.65,0,.35,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--espresso);overflow:hidden}
+  body{
+    font-family:"Manrope",system-ui,sans-serif;color:var(--brown);
+    background:radial-gradient(120% 80% at 50% 0%,#3d271c 0%,var(--espresso) 60%,#1d120d 100%);
+    -webkit-tap-highlight-color:transparent;
+  }
+  /* Khung thiep doc: full man hinh tren dien thoai, dat giua nen espresso tren desktop */
+  .app{
+    position:relative;margin:0 auto;height:100dvh;width:min(100vw, calc(100dvh * 0.5625));
+    min-width:min(100vw,360px);overflow:hidden;container-type:size;background:#1d120d;
+    box-shadow:0 30px 120px rgba(0,0,0,.55);
+  }
+  @media (max-width:600px){ .app{width:100vw;box-shadow:none} }
+
+  /* "frame" = khung dung ty le artwork goc 1125x2000; moi lop dung chung he toa do nay.
+     .cover: phu kin man hinh (phong bi).  .fit: giu nguyen toan bo anh, khong cat. */
+  .frame{position:absolute;left:50%;top:50%;aspect-ratio:1125/2000;transform:translate(-50%,-50%)}
+  .frame.cover{width:max(100cqw, 56.25cqh)}
+  .frame.fit{width:min(100cqw, 56.25cqh)}
+  .fill{position:absolute;inset:-8%;background:center/cover no-repeat;filter:blur(26px) brightness(.96) saturate(1.05);transform:scale(1.1)}
+  .L{position:absolute;inset:0;width:100%;height:100%;display:block;user-select:none;-webkit-user-drag:none;pointer-events:none}
+
+  /* ---------- San khau: khung cua co dinh, chi long vom doi canh ---------- */
+  .stage{position:absolute;inset:0;touch-action:none;overflow:hidden}
+  .floor{position:absolute;inset:0;opacity:0}          /* tuong + vom + cot + san cua tung canh (ngoai long vom) */
+  .floor.on{opacity:1}
+  .floor .frame{overflow:hidden}
+  .inner{position:absolute;inset:0;background:#efe6da;overflow:hidden}   /* cat theo long vom bang clip-path (JS) */
+  .scene{position:absolute;inset:0;visibility:hidden;opacity:0;will-change:transform,opacity}
+  .scene.on{visibility:visible;opacity:1}
+  .scene.gate{perspective:1600px}
+
+  .swipe{position:absolute;left:50%;bottom:calc(12px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:5;
+    display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--ivory);background:none;border:0;cursor:pointer;
+    font:500 10px/1.2 "Manrope",Arial,sans-serif;letter-spacing:.28em;text-transform:uppercase;text-shadow:0 1px 6px rgba(43,27,20,.6);
+    min-height:44px;padding:0 16px;white-space:nowrap;transition:opacity .4s}
+  .swipe svg{animation:nudge 1.8s var(--ease-io) infinite}
+  @keyframes nudge{0%,100%{transform:translateY(3px);opacity:.4}50%{transform:translateY(-4px);opacity:1}}
+  .toast{position:absolute;left:50%;bottom:calc(64px + env(safe-area-inset-bottom));transform:translate(-50%,8px);z-index:6;
+    font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ivory);white-space:nowrap;
+    background:rgba(43,27,20,.6);padding:10px 16px;border-radius:999px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    opacity:0;transition:opacity .35s,transform .35s;pointer-events:none}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+
+  /* canh coc: vuot ngang tren coc de xoay */
+  .cupGroup{filter:drop-shadow(0 18px 22px rgba(60,30,15,.35))}
+  .cupGroup.floating{animation:float 4.2s var(--ease-io) infinite}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-.8%)}}
+  .win{-webkit-mask:url(assets/05_win_mask.png) 0 0/100% 100% no-repeat;mask:url(assets/05_win_mask.png) 0 0/100% 100% no-repeat}
+  .win img{position:absolute;inset:0;width:100%;height:100%;visibility:hidden;will-change:transform;pointer-events:none}
+  .win img.on{visibility:visible}
+  .win img.moving{filter:drop-shadow(-6px 0 8px rgba(20,30,40,.28)) drop-shadow(6px 0 8px rgba(20,30,40,.28))}
+  .bell{transform-origin:78.5% 41.5%;
+    -webkit-mask-image:radial-gradient(9% 11% at 79% 50%,#000 55%,transparent 100%);
+            mask-image:radial-gradient(9% 11% at 79% 50%,#000 55%,transparent 100%)}
+  .hot{position:absolute;background:none;border:0;cursor:pointer;pointer-events:auto}
+  .hot:focus-visible{outline:2px solid var(--ivory);outline-offset:4px}
+  .bell-hot{left:73%;top:40%;width:10%;height:20%;border-radius:40%}
+  .cup-hot{left:28%;top:32%;width:43.5%;height:41%;border-radius:12%;touch-action:none;cursor:grab;-webkit-user-select:none;user-select:none}
+  .cup-hot:active{cursor:grabbing}
+  .cup-ui{transition:opacity .4s;opacity:0;pointer-events:none}
+  .cup-ui.show{opacity:1}
+  .cup-ui.show .dots{pointer-events:auto}
+  .step-hint{position:absolute;left:50%;top:calc(14px + env(safe-area-inset-top));transform:translateX(-50%);white-space:nowrap;z-index:5;
+    display:flex;align-items:center;gap:8px;
+    font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ivory);
+    background:rgba(43,27,20,.42);padding:9px 14px;border-radius:999px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    transition:opacity .4s;pointer-events:none}
+  .step-hint svg{animation:sway 1.8s var(--ease-io) infinite}
+  @keyframes sway{0%,100%{transform:translateX(-3px)}50%{transform:translateX(3px)}}
+  .dots{position:absolute;left:0;right:0;bottom:calc(58px + env(safe-area-inset-bottom));display:flex;justify-content:center;gap:4px;z-index:5}
+  .dots button{width:24px;height:24px;border:0;background:none;cursor:pointer;display:grid;place-items:center;padding:0}
+  .dots button::before{content:"";width:6px;height:6px;border-radius:50%;background:rgba(245,239,230,.55);transition:all .35s var(--ease-out)}
+  .dots button[aria-current="true"]::before{width:18px;border-radius:4px;background:var(--ivory)}
+
+  /* canh loi hen: anh sang luot qua the "Quy Dai su" va dau S tren ghe */
+  .sheen{position:absolute;left:36.5%;top:66.5%;width:29%;height:11%;overflow:hidden;pointer-events:none;border-radius:6px;mix-blend-mode:screen}
+  .sheen::before{content:"";position:absolute;inset:-20% -60%;transform:translateX(-80%);
+    background:linear-gradient(105deg,transparent 38%,rgba(255,240,214,.75) 50%,transparent 62%)}
+  .sheen.go::before{animation:sheen 1.8s cubic-bezier(.4,0,.2,1) .5s both}
+  @keyframes sheen{to{transform:translateX(80%)}}
+  .replay{position:absolute;left:50%;bottom:calc(10px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:5;
+    min-height:44px;padding:0 20px;border-radius:999px;border:1px solid rgba(245,239,230,.45);background:rgba(43,27,20,.35);
+    color:var(--ivory);font:500 11px "Manrope",Arial,sans-serif;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity .5s}
+  .replay.show{opacity:1;pointer-events:auto}
+
+  /* ---------- Mo thiep: phong bi (cham 1) + cong that no (cham 2) ---------- */
+  .envWrap{position:absolute;inset:0;z-index:8}
+  .envWrap{overflow:hidden;isolation:isolate}
+  .envWrap .frame{perspective:1500px;perspective-origin:50% 35%}
+  .envWrap.opening .seal,.envWrap.opening .shine{animation-play-state:paused}
+  .stage{transform-origin:50% 48%}
+  .env{position:absolute;inset:0}
+  #envBody{will-change:transform}
+  .flap{transform-origin:50% 23%;transform-style:preserve-3d;will-change:transform;
+    -webkit-backface-visibility:hidden;backface-visibility:hidden}
+  .flap > img{filter:drop-shadow(0 5px 7px rgba(20,10,5,.18))}
+  /* Cat lui vao trong bien alpha de bo cac bac thang o hai mep giay.
+     Chi ap dung luc mo, giu nguyen hinh phong bi khi dang dong. */
+  .envWrap.opening #envBody{clip-path:polygon(0 22.65%,37.35% 47.5%,64.35% 47.5%,100% 23.9%,100% 100%,0 100%)}
+  .envWrap.opening .flap > img{clip-path:polygon(0 0,100% 0,100% 23.35%,63.85% 47.2%,38% 47.2%,0 22.1%)}
+  /* Nguon sang nam o tren, toa xuong canh cua that phia sau phong bi. */
+  .envelope-light{position:absolute;inset:0;overflow:hidden;opacity:0;
+    pointer-events:none;mix-blend-mode:screen}
+  .envelope-light::before{content:"";position:absolute;inset:0;
+    background:radial-gradient(ellipse 65% 72% at 50% -5%,rgba(255,242,215,.36),rgba(255,234,198,.12) 42%,transparent 78%)}
+  .light-beam{position:absolute;left:-20%;top:-12%;width:140%;height:110%;
+    background:conic-gradient(from 145deg at 50% 0%,transparent 0deg,rgba(255,245,225,.08) 10deg,
+      rgba(255,238,210,.18) 35deg,rgba(255,234,201,.08) 60deg,transparent 70deg,transparent 360deg);
+    filter:blur(28px);
+    -webkit-mask-image:linear-gradient(to bottom,#000,rgba(0,0,0,.7) 42%,transparent 94%);
+            mask-image:linear-gradient(to bottom,#000,rgba(0,0,0,.7) 42%,transparent 94%)}
+  /* dau sap S dat o dinh nap */
+  .sealWrap{transform:translate(1.2%,-4.6%) scale(.78);transform-origin:49.8% 49.6%}
+  .seal{filter:drop-shadow(0 10px 10px rgba(40,20,10,.45));transform-origin:49.8% 49.6%;animation:breathe 2.6s var(--ease-io) infinite}
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.025)}}
+  .shine{
+    -webkit-mask:url(assets/01_seal.webp) 0 0/100% 100%;mask:url(assets/01_seal.webp) 0 0/100% 100%;
+    -webkit-mask-mode:alpha;mask-mode:alpha;
+    background:linear-gradient(115deg,transparent 40%,rgba(255,246,228,.55) 49%,transparent 58%) 0 0/300% 100% no-repeat;
+    animation:sweep 3.2s var(--ease-io) infinite 1s;mix-blend-mode:screen}
+  @keyframes sweep{0%{background-position:100% 0}55%,100%{background-position:-50% 0}}
+  .leafL,.leafR{backface-visibility:hidden;will-change:transform}
+  .leafL{transform-origin:16.67% 50%}
+  .leafR{transform-origin:83.33% 50%}
+  .bow-ping{position:absolute;left:50%;top:52.3%;width:16%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);
+    border:1.5px solid rgba(240,250,250,.9);opacity:0;pointer-events:none}
+  .stage-bow .bow-ping{animation:ping 2s var(--ease-out) infinite .4s}
+  @keyframes ping{0%{transform:translate(-50%,-50%) scale(.6);opacity:.9}100%{transform:translate(-50%,-50%) scale(2.1);opacity:0}}
+  .hint{position:absolute;left:0;right:0;bottom:calc(5cqh + env(safe-area-inset-bottom));text-align:center;z-index:9;
+    font:500 11px/1 "Manrope",Arial,sans-serif;letter-spacing:.3em;text-transform:uppercase;color:rgba(245,239,230,.92);
+    text-shadow:0 1px 8px rgba(30,15,8,.6);transition:opacity .4s;pointer-events:none}
+  .hint::after{content:"";display:block;width:38px;height:1px;margin:12px auto 0;background:currentColor;opacity:.6;animation:line 2.2s var(--ease-io) infinite}
+  .stage-bow .hint{width:max-content;margin:0 auto;padding:12px 18px 10px;border-radius:999px;background:rgba(43,27,20,.42);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  .stage-bow .hint::after{display:none}
+  @keyframes line{0%,100%{transform:scaleX(.3)}50%{transform:scaleX(1)}}
+  .brandtop{position:absolute;left:0;right:0;top:calc(7cqh + env(safe-area-inset-top));text-align:center;color:rgba(245,239,230,.9);z-index:9;
+    font:500 13px/1 "Manrope",Arial,sans-serif;letter-spacing:.45em;pointer-events:none;transition:opacity .5s}
+  .brandtop small{display:block;font-size:8px;letter-spacing:.34em;margin-top:7px;opacity:.75}
+
+  @media (prefers-reduced-motion:reduce){
+    .seal,.shine,.swipe svg,.cupGroup.floating,.step-hint svg,.sheen.go::before,.stage-bow .bow-ping,.hint::after{animation:none!important}
+  }
+
+  .app{width:100%;min-width:0;max-width:none;height:100%;box-shadow:none}
+  .frame.fit{width:min(100cqw,56.25cqh)}
+  .hint{font-size:14px;letter-spacing:.12em}
+  .brandtop{font-size:14px}
+  .brandtop small{font-size:10px}
+  .ready-hidden{visibility:hidden}
+</style></head><body class="ready-hidden"><div class="app" id="app">
+<div class="stage" id="stage" aria-label="Chạm nơ để mở cổng">
+  <div class="fill" style="background-image:url(assets/02_door_clean.webp)"></div>
+  <div class="frame fit"><img class="L" src="assets/02_door_clean.webp" alt="Cánh cửa Solina thắt nơ"><div class="inner" id="inner" style="background:transparent"><div class="scene gate on"><canvas class="L" id="bowCanvas" style="filter:drop-shadow(0 6px 8px rgba(40,20,10,.28))"></canvas><span class="bow-ping"></span></div></div></div>
+</div>
+  <!-- ====== Phong bi phu kin man hinh (cham 1) ====== -->
+  <div class="envWrap" id="envWrap">
+    <div class="frame cover">
+      <div class="env" id="env">
+        <img class="L" id="envBody" src="assets/01c_body.webp" alt="">
+        <div class="L flap" id="flap">
+          <img class="L" src="assets/01c_flap.webp" alt="">
+          <div class="L sealWrap"><img class="L seal" src="assets/01_seal.webp" alt=""><div class="L shine"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="envelope-light" id="envelopeLight" aria-hidden="true"><div class="light-beam"></div></div>
+  </div>
+  <div class="brandtop" id="brandtop">SOLINA<small>SIGNATURE BY WYNDHAM</small></div>
+  <p class="hint" id="hint">Chạm dấu sáp để mở thư</p>
+</div><script>
+(() => {
+  const $=s=>document.querySelector(s),app=$('#app'),hint=$('#hint');
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const D=ms=>reduce?1:ms;
+  const anim=(el,kf,o)=>el.animate(kf,Object.assign({fill:'forwards',easing:'cubic-bezier(.65,0,.35,1)'},o,{duration:D(o.duration),delay:o.delay?D(o.delay):0})).finished;
+  const clamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v));
+  const easeOut=t=>1-Math.pow(1-t,3),easeIn=t=>t*t*t;
+  const X0=16.67,X1=83.33,XC=50,YB=89.5,CY=35.25,RX=33.33,RY=18.75;
+  const arc=(from,to,n=40)=>Array.from({length:n+1},(_,i)=>{const a=from+(to-from)*i/n;return `${(XC+RX*Math.cos(a)).toFixed(2)}% ${(CY+RY*Math.sin(a)).toFixed(2)}%`;});
+  $('#inner').style.clipPath=`polygon(${[`${X0}% ${YB}%`,...arc(Math.PI,2*Math.PI),`${X1}% ${YB}%`].join(',')})`;
+  /* ---- No lua tren canvas: ca chiec no ru xuong roi truot khoi khung ---- */
+  const bowImg = new Image(), bowSource = new Image();
+  const bowTexture = document.createElement('canvas'), bowCtx = bowTexture.getContext('2d');
+  bowTexture.width = 1125; bowTexture.height = 2000;
+  let bowReady = false;
+  // Lay lai phan lua bi thieu alpha tu anh goc, theo dung duong cong duoi no.
+  // Ban ve nay dung chung cho ca trang thai dung yen va tung dai chuyen dong.
+  function prepareBow(){
+    if (!bowImg.complete || !bowImg.naturalWidth || !bowSource.complete || !bowSource.naturalWidth) return;
+    bowCtx.clearRect(0, 0, 1125, 2000);
+    bowCtx.drawImage(bowImg, 0, 0, 1125, 2000);
+    bowCtx.save();
+    bowCtx.clip(new Path2D('M 670 1326 C 688 1353 720 1386 737 1417 L 765 1417 L 765 1326 Z'));
+    bowCtx.drawImage(bowSource, 0, 0, 1125, 2000);
+    bowCtx.restore();
+    bowReady = true;
+    sizeCanvas();
+  }
+  bowImg.onload = bowSource.onload = prepareBow;
+  bowImg.src = 'assets/02_bow.webp'; bowSource.src = 'assets/02_bow_source.webp';
+  const cv = $('#bowCanvas'), ctx = cv.getContext('2d');
+  const SX0 = 186, SX1 = 940, SY0 = 880, SY1 = 1600, KX = 562, N = 90;
+  let bowT = 0, bowAlpha = 1;
+  function sizeCanvas(){
+    const r = cv.getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 2.5);
+    if (!r.width) return;
+    cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+    drawBow();
+  }
+  function drawBow(){
+    if (!bowReady || !cv.width) return;
+    const k = cv.width / 1125;
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    ctx.globalAlpha = bowAlpha;
+    const t = bowT, p1 = easeOut(clamp(t / .38)), p2 = easeIn(clamp((t - .25) / .75));
+    const sw = (SX1 - SX0) / N, h = SY1 - SY0;
+    for (let i = 0; i < N; i++){
+      const sx = SX0 + i * sw, d = Math.abs(sx + sw / 2 - KX) / (SX1 - KX);
+      const droop = 95 * p1 * d * d + 26 * p1, slide = p2 * (1250 + 120 * d * d), stretch = 1 + .06 * p1 * d;
+      ctx.drawImage(bowTexture, sx, SY0, sw + .8, h, sx * k, (SY0 + droop + slide) * k, (sw + .8) * k, h * stretch * k);
+    }
+    ctx.globalAlpha = 1;
+  }
+  function playBow(ms){
+    return new Promise(res => {
+      if (reduce) { bowT = 1; bowAlpha = 0; drawBow(); return res(); }
+      const t0 = performance.now();
+      const step = now => { const t = clamp((now - t0) / ms); bowT = t; bowAlpha = 1 - clamp((t - .78) / .22); drawBow(); t < 1 ? requestAnimationFrame(step) : res(); };
+      requestAnimationFrame(step);
+    });
+  }
+
+  /* ---- Mo thiep ---- */
+  let stageState = 0; // 0 phong bi · 1 dang mo · 2 cho cham no · 3 dang mo cong · 4 dang xem cac canh
+  async function openEnvelope(){
+    parent.solinaAudio?.start();
+    stageState = 1; hint.style.opacity = 0; $('#brandtop').style.opacity = 0;
+    $('#envWrap').classList.add('opening');
+    // The fold moves toward the viewer. Focus follows through to the door.
+    const duration = 2500;
+    const optics = {duration, easing:'cubic-bezier(.45,0,.2,1)'};
+    const flapA = anim($('#flap'), [
+      {transform:'translateY(0) translateZ(0) rotateX(0deg)', filter:'blur(0px) brightness(1)', opacity:1},
+      {transform:'translateY(-3%) translateZ(30px) rotateX(24deg)', filter:'blur(1px) brightness(1.04)', opacity:1, offset:.28},
+      {transform:'translateY(-22%) translateZ(95px) rotateX(64deg)', filter:'blur(6px) brightness(1.05)', opacity:1, offset:.65},
+      {transform:'translateY(-67%) translateZ(125px) rotateX(84deg)', filter:'blur(11px) brightness(1.03)', opacity:0}
+    ], optics);
+    const bodyA = anim($('#envBody'), [
+      {transform:'translateY(0) scale(1)', filter:'blur(0px)'},
+      {transform:'translateY(18%) scale(1.025)', filter:'blur(2px)', offset:.47},
+      {transform:'translateY(105%) scale(1.09)', filter:'blur(7px)'}
+    ], optics);
+    const focusA = anim($('#stage'), [
+      {transform:'scale(1.065)', filter:'blur(11px)'},
+      {transform:'scale(1.028)', filter:'blur(5px)', offset:.56},
+      {transform:'scale(1)', filter:'blur(0px)'}
+    ], {duration, easing:'ease-out'});
+    const lightA = anim($('#envelopeLight'), [
+      {opacity:0,transform:'translateY(-5%)'},
+      {opacity:.42,transform:'translateY(0)',offset:.43},
+      {opacity:0,transform:'translateY(7%)'}
+    ], {duration, easing:'ease-in-out'});
+    await Promise.all([flapA,bodyA,focusA,lightA]);
+    $('#stage').getAnimations().forEach(animation => animation.cancel());
+    $('#envWrap').style.display = 'none';
+    hint.textContent = 'Chạm nơ để mở cổng'; hint.style.opacity = 1;
+    app.classList.add('stage-bow');
+    stageState = 2;
+  }
+  async function openGate(){
+    if(stageState!==2||!bowReady)return;
+    parent.solinaAudio?.start();
+    stageState=3;hint.style.opacity=0;app.classList.remove('stage-bow');
+    parent.postMessage({type:'solina-unlock-audio'},location.origin);
+    await playBow(2300);
+    parent.postMessage({type:'solina-bow-finished'},location.origin);
+  }
+
+  $('#envWrap').addEventListener('click',()=>{if(stageState===0){parent.postMessage({type:'solina-unlock-audio'},location.origin);openEnvelope();}});
+  $('#stage').addEventListener('click',()=>{if(stageState===2)openGate();});
+  addEventListener('keydown',e=>{if(!['Enter',' '].includes(e.key))return;e.preventDefault();if(stageState===0)openEnvelope();else if(stageState===2)openGate();});
+  addEventListener('resize',sizeCanvas);
+  Promise.all([...document.images,bowImg,bowSource].map(im=>im.decode().catch(()=>{}))).then(()=>{document.body.classList.remove('ready-hidden');sizeCanvas();});
+})();
+</script></body></html>
