@@ -21,7 +21,7 @@ async function assets(){
   if(!window.tf) await script(root+'@tensorflow/tfjs@4.22.0/dist/tf.min.js');
   await window.tf.setBackend('cpu');
   await window.tf.ready();
-  if(!window.bodyPix) await script(root+'@tensorflow-models/body-pix@2.2.1/dist/body-pix.min.js');
+  if(!window.bodyPix) await script('./bo-anh/body-pix-2.2.0.js');
   return window.bodyPix.load({architecture:'MobileNetV1',outputStride:16,multiplier:.75,quantBytes:2});
 }
 
@@ -43,7 +43,7 @@ export async function portraitFrom(file,notify) {
     model??=assets().catch(e=>{model=undefined;throw e;});
     let segmenter;
     try {segmenter=await model;}
-    catch {throw new Error('Chưa tải được bộ tách nền. Hãy thử lại hoặc chọn PNG đã tách nền.');}
+    catch (error) {console.warn('Tách nền ảnh',error);throw new Error('Chưa tải được bộ tách nền. Hãy thử lại hoặc chọn PNG đã tách nền.');}
     const maskArea=canvas(512);
     const ratio=512/Math.max(surface.width,surface.height);
     const w=surface.width*ratio,h=surface.height*ratio,x=(512-w)/2,y=(512-h)/2;
