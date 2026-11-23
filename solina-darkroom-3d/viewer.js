@@ -1,3 +1,5 @@
+import {enableAvatar} from './avatar.js?v=7';
+import {createPrintScene} from './print-scene.js?v=7';
 import {createPanoramaView} from './panorama.js?v=6';
 import {vertexShader, fragmentShader} from './surfaces.js?v=6';
 
@@ -111,6 +113,8 @@ async function createWebGLView(canvas,context) {
       scene.add(mesh);
     }
 
+    const workshop=createPrintScene(THREE,scene);
+    let instruction;
     const up = new THREE.Vector3(0,1,0);
     const target = new THREE.Vector3();
     const direction = new THREE.Vector3();
@@ -151,12 +155,20 @@ async function createWebGLView(canvas,context) {
       const tilt = Math.max(-1.2,Math.min(1.2,Math.asin(direction.y)+pitch));
       direction.set(Math.sin(heading)*Math.cos(tilt),Math.sin(tilt),-Math.cos(heading)*Math.cos(tilt));
       camera.lookAt(target.copy(camera.position).add(direction));
+      if(instruction) workshop.frame(instruction.phase,instruction.progress,camera,aspect<1);
       renderer.render(scene,camera);
     }
 
     const initial={active:'entry',value:0,yaw:0,pitch:0};
     draw(initial);
-    return {element:renderer.domElement, mode:'3d', draw};
+    return {
+      element:renderer.domElement, mode:'3d', draw,
+      workshop:{
+        start:workshop.start, finish:workshop.finish,
+        frame(phase,progress){instruction={phase,progress};},
+        reset(){instruction=null;workshop.hide();},
+      },
+    };
 }
 
 async function start() {
@@ -183,6 +195,7 @@ async function start() {
     let raf = 0;
     let startAt = 0;
     let pointer = null;
+    let runningPrint=false;
     function formatTime(fraction) {
       return `0:${String(Math.min(10,Math.floor(fraction * 10))).padStart(2,'0')} / 0:10`;
     }
@@ -211,7 +224,9 @@ async function start() {
     }
 
     function beginTour() {
+      if (runningPrint) return;
       if (playing) { stop(); return; }
+      resetPrint();
       if (active === 'trays' || active === 'prints' || value >= 1) setValue(0);
       active = null;
       updateButton(null);
@@ -223,6 +238,8 @@ async function start() {
     }
 
     function navigate(valueNext) {
+      if(runningPrint)return;
+      resetPrint();
       stop();
       if (active === 'trays' || active === 'prints') yaw = pitch = 0;
       active = null;
@@ -235,6 +252,8 @@ async function start() {
     progress.addEventListener('input', () => navigate(Number(progress.value)/1000));
     for (const button of spots) {
       button.addEventListener('click', () => {
+        if(runningPrint)return;
+        resetPrint();
         stop();
         active = button.dataset.spot;
         updateButton(active);
@@ -244,7 +263,7 @@ async function start() {
       });
     }
     viewport.addEventListener('pointerdown', event => {
-      if (pointer || event.button !== 0) return;
+      if (pointer || event.button !== 0 || runningPrint) return;
       stop();
       pointer = {id:event.pointerId,x:event.clientX,y:event.clientY};
       viewport.setPointerCapture(event.pointerId);
@@ -259,6 +278,7 @@ async function start() {
     });
     viewport.addEventListener('lostpointercapture', () => {pointer = null;});
     viewport.addEventListener('keydown', event => {
+      if (runningPrint) return;
       if (!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Home'].includes(event.key)) return;
       event.preventDefault();
       if (event.key === 'Home') spots[0].click();
@@ -283,11 +303,88 @@ async function start() {
       });
     }
 
+    const still=node('fallback-print');
+    const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
+    const animation=(phase,ms,callback)=>{
+      return new Promise(resolve=>{
+        const start=performance.now();
+        const frame=now=>{
+          const t=Math.min(1,(now-start)/ms);
+          callback(reduced.matches?1:t);
+          if(t===1)resolve();
+          else requestAnimationFrame(frame);
+        };
+        requestAnimationFrame(frame);
+      });
+    };
+    const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+    const setPosition=spot=>{
+      active=spot;yaw=pitch=0;updateButton(spot);draw();
+    };
+    function resetPrint(){
+      display.workshop?.reset();
+      still.hidden=true;
+      still.removeAttribute('src');
+    }
+    const director={
+      async wash(ghost,cue){
+        stop();runningPrint=true;
+        stage.classList.add('washing');
+        try {
+          if(display.workshop)display.workshop.start(ghost);
+          else {still.src=ghost.toDataURL();still.hidden=false;}
+          setPosition('trays');
+          cue('Đang tráng ảnh');
+          if(display.workshop){
+            const animate=(phase,ms)=>animation(phase,ms,value=>{
+              display.workshop.frame(phase,value);draw();
+            });
+            await animate('dip',2200);
+            await animate('lift',700);
+            setPosition('prints');
+            cue('Đang kẹp ảnh lên dây');
+            await animate('hang',1250);
+          } else {
+            await pause(2200);
+            setPosition('prints');
+            cue('Đang kẹp ảnh lên dây');
+            await pause(950);
+          }
+          cue('Chờ ảnh hiện màu');
+          await pause(1500);
+        } catch (e){
+          runningPrint=false;
+          stage.classList.remove('washing');
+          throw e;
+        }
+      },
+      async reveal(portrait){
+        setPosition('prints');
+        try {
+          if(display.workshop){
+            display.workshop.finish(portrait);
+            await animation('reveal',700,value=>{
+              display.workshop.frame('reveal',value);draw();
+            });
+          } else {
+            still.hidden=false;
+            still.src=portrait.toDataURL();
+            if(!reduced.matches)still.animate([{opacity:.3},{opacity:1}],{duration:700});
+            await pause(700);
+          }
+        } finally {
+          runningPrint=false;stage.classList.remove('washing');
+        }
+      },
+      reset(){runningPrint=false;stage.classList.remove('washing');resetPrint();setPosition('entry');},
+      unlock(){runningPrint=false;stage.classList.remove('washing');},
+    };
     draw();
     stage.classList.add('ready');
     node('controls').hidden = false;
     node('hint').hidden = false;
-    viewport.focus({preventScroll:true});
+    enableAvatar(director);
+    node('portrait-file').focus({preventScroll:true});
   } catch (error) {
     console.error(error);
     status.textContent = 'Chưa mở được mô hình 3D trên trình duyệt này. Bạn vẫn có thể xem ảnh toàn cảnh.';
