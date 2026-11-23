@@ -1,4 +1,5 @@
-import {createPanoramaView} from './panorama.js';
+import {createPanoramaView} from './panorama.js?v=3';
+import {createProjectedLight, projectionGLSL} from './projected-light.js';
 
 const node = id => document.getElementById(id);
 const stage = node('stage');
@@ -66,6 +67,7 @@ const fragmentShader = `
     return fract(sin(dot(p,vec3(12.9898,78.233,37.719)))*43758.5453);
   }
 
+  ${projectionGLSL}
   void main() {
     vec3 diffuse = hasImage ? texture2D(imageMap, texturePoint).rgb : baseColor;
     vec3 n = normalize(surface) * (gl_FrontFacing ? 1.0 : -1.0);
@@ -85,7 +87,10 @@ const fragmentShader = `
         color += vec3(.30,.23,.13)*(lamp*.41 + grazed*.075 + fineGrain*.034);
       }
     }
-    gl_FragColor = vec4(color, water ? .43 : 1.0);
+    vec4 matched = sceneGrade(n,location);
+    float strength = matched.a * (hasImage ? .91 : 1.);
+    color = mix(color,matched.rgb,strength);
+    gl_FragColor = vec4(color,water ? mix(.43,1.,strength) : 1.0);
     #include <colorspace_fragment>
   }
 `;
@@ -102,7 +107,12 @@ async function createWebGLView(canvas,context) {
     const [THREE, model] = await Promise.all([importThree(), fetchScene()]);
     const renderer = new THREE.WebGLRenderer({canvas,context,antialias:true});
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.65));
+    renderer.debug.onShaderError=(gl,program,vertex,fragment) => {
+      throw new Error(gl.getProgramInfoLog(program) || gl.getShaderInfoLog(fragment) || gl.getShaderInfoLog(vertex));
+    };
     const scene = new THREE.Scene();
+    let refreshLight=()=>{};
+    const projected=await createProjectedLight(THREE,()=>refreshLight());
     scene.background = new THREE.Color('#18140f');
     const camera = new THREE.PerspectiveCamera(57, 1, .044, 24);
     const {meta, bytes} = model;
@@ -129,6 +139,7 @@ async function createWebGLView(canvas,context) {
       geometry.setIndex(new THREE.BufferAttribute(typed(part(item.indices), item.index32 ? Uint32Array : Uint16Array), 1));
       const material = new THREE.ShaderMaterial({
         uniforms: {
+          ...projected.uniforms,
           baseColor: {value: new THREE.Color(...item.rgb)},
           metallic: {value:item.metal}, roughnessLevel: {value:item.rough},
           glowing: {value:item.glow}, water: {value:item.water},
@@ -151,7 +162,10 @@ async function createWebGLView(canvas,context) {
     const direction = new THREE.Vector3();
     const previous = new THREE.Vector3();
     const next = new THREE.Vector3();
-    function draw({active,value,yaw,pitch}) {
+    let lastView;
+    function draw(view) {
+      lastView=view;
+      const {active,value,yaw,pitch}=view;
       const {width,height}=viewport.getBoundingClientRect();
       if (!width || !height) return;
       const aspect = width/height;
@@ -176,7 +190,8 @@ async function createWebGLView(canvas,context) {
         previous.fromArray(meta.tour[i][1]);
         next.fromArray(meta.tour[j][1]);
         direction.lerpVectors(previous, next, frame-i).normalize();
-        angle = camera.aspect < 1 ? 71 : 49;
+        const frameWidth = projected.hero?.field[0] ?? .8571429;
+        angle = camera.aspect < 1 ? 71 : THREE.MathUtils.radToDeg(2*Math.atan(frameWidth/camera.aspect));
       }
       camera.fov = angle + (camera.aspect < .95 && active && active !== 'entry' ? 12 : 0);
       camera.updateProjectionMatrix();
@@ -185,9 +200,13 @@ async function createWebGLView(canvas,context) {
       const tilt = Math.max(-1.2,Math.min(1.2,Math.asin(direction.y)+pitch));
       direction.set(Math.sin(heading)*Math.cos(tilt),Math.sin(tilt),-Math.cos(heading)*Math.cos(tilt));
       camera.lookAt(target.copy(camera.position).add(direction));
+      projected.select(active,value,camera.position);
       renderer.render(scene,camera);
     }
 
+    const initial={active:'entry',value:0,yaw:0,pitch:0};
+    draw(initial);
+    refreshLight=()=>draw(lastView??initial);
     return {element:renderer.domElement, mode:'3d', draw};
 }
 
