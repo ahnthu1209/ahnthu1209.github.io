@@ -20,6 +20,7 @@ export const fragmentShader = `
   uniform bool hasArtwork;
   uniform bool cleanSurface;
   uniform bool grout;
+  uniform bool paperPhoto;
   uniform sampler2D surfaceMap;
   uniform sampler2D artworkMap;
   varying vec3 surface;
@@ -36,7 +37,10 @@ export const fragmentShader = `
 
   void main() {
     vec3 n = normalize(surface) * (gl_FrontFacing ? 1. : -1.);
-    if (isWater) {
+    if (paperPhoto) {
+      vec3 photo=texture2D(artworkMap,artUV).rgb;
+      gl_FragColor=vec4(photo*vec3(.847,.768,.631),1.);
+    } else if (isWater) {
       vec2 p=positionInRoom.xz;
       n=normalize(n+vec3(
         .008*sin(p.x*51.+p.y*25.),

@@ -81,7 +81,7 @@ button:disabled { cursor:wait; opacity:.7; }
   border:1px solid var(--line); font-size:.82rem;
 }
 .experience[data-vr] .view { cursor:default; }
-.experience[data-washing] .vr-controls { display:none; }
+.experience[data-washing] .vr-controls, .experience[data-washing] .vr-zoom { display:none; }
 @media (any-pointer:coarse), (max-width:740px) {
   .experience-tools {
     top:calc(max(18px,env(safe-area-inset-top)) + 51px);

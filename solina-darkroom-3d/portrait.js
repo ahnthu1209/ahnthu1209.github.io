@@ -183,6 +183,18 @@ export async function compose(subject,index,adjust,number){
   const out=canvas(1000),ctx=context(out);
   ctx.imageSmoothingQuality='high';
   ctx.drawImage(background,0,0,1000,1000);
+  if(index===6){
+    // Continue the original paper texture across the dark corner of the
+    // editable background. The sample-card artwork uses a separate image.
+    ctx.save();
+    ctx.scale(1000/600,1000/600);
+    ctx.beginPath();
+    ctx.moveTo(0,519);ctx.lineTo(217,573);ctx.lineTo(210,600);
+    ctx.lineTo(0,600);ctx.closePath();ctx.clip();
+    ctx.transform(1,.5,0,-1,0,1038);
+    ctx.drawImage(background,0,0,600,600);
+    ctx.restore();
+  }
   drawPortrait(ctx,subject,index,adjust,1000);
   ctx.save();ctx.scale(1000/600,1000/600);
   const [lx,ly,lw,lh]=type.label;

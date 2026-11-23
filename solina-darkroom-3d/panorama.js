@@ -3,7 +3,7 @@ const available = new Set([...route,'bacs','tirages']);
 
 async function loadCube(name) {
   const image = new Image();
-  image.src='./panorama/'+name+'-gallery.webp?v=17';
+  image.src='./panorama/'+name+'-gallery.webp?v=18';
   await image.decode();
   const size=image.naturalWidth/3;
   if (!Number.isInteger(size) || image.naturalHeight!==size*2) throw new Error('Ảnh 360° không hợp lệ');

@@ -1,7 +1,7 @@
-import {enableAvatar} from './avatar.js?v=17';
+import {enableAvatar} from './avatar.js?v=18';
 import {createPrintScene} from './print-scene.js?v=17';
-import {createPanoramaView} from './panorama.js?v=17';
-import {vertexShader, fragmentShader} from './surfaces.js?v=17';
+import {createPanoramaView} from './panorama.js?v=18';
+import {vertexShader, fragmentShader} from './surfaces.js?v=18';
 
 import {createOrientationControl} from './orientation.js?v=17';
 
@@ -122,6 +122,7 @@ async function createWebGLView(canvas,context) {
           hasArtwork:{value:Boolean(art)},
           cleanSurface:{value:/^(Gạch men|Mạch gạch|Mặt bàn|Cạnh bàn|Gỗ mặt|Nhựa màu ngà|Viền bản in|Giấy bạc|Nhôm của)/.test(item.name)},
           grout:{value:item.name==='Mạch gạch'},
+          paperPhoto:{value:false},
           surfaceMap:{value:surfaceMap},
           artworkMap:{value:art??surfaceMap},
         },
@@ -137,6 +138,17 @@ async function createWebGLView(canvas,context) {
       scene.add(mesh);
     }
 
+    // Align with the face of the white paper under the first enlarger.
+    const printWidth=.312;
+    const printHeight=printWidth*941/1672;
+    const paperPhoto=new THREE.Mesh(
+      new THREE.PlaneGeometry(printWidth,printHeight),
+      new THREE.MeshBasicMaterial({color:'#ede3d0',toneMapped:false})
+    );
+    paperPhoto.rotation.set(-Math.PI/2,0,Math.PI/2,'XYZ');
+    paperPhoto.position.set(-1.10,1.037,1.235);
+    paperPhoto.visible=false;
+    scene.add(paperPhoto);
     const workshop=createPrintScene(THREE,scene);
     let instruction;
     const up = new THREE.Vector3(0,1,0);
@@ -190,6 +202,15 @@ async function createWebGLView(canvas,context) {
 
     const initial={active:'entry',value:0,yaw:0,pitch:0};
     draw(initial);
+    fetch('./anh-treo/phong-khach-duoi-may.webp').then(response=>{
+      if(!response.ok)throw new Error('Ảnh dưới máy phóng không tải được');
+      return response.blob();
+    }).then(unpackTexture).then(texture=>{
+      paperPhoto.material.map=texture;
+      paperPhoto.material.needsUpdate=true;
+      paperPhoto.visible=true;
+      renderer.render(scene,camera);
+    }).catch(error=>console.warn(error));
     return {
       element:renderer.domElement, mode:'3d', draw,
       orientationBasis:()=>camera.quaternion.clone(),
@@ -234,11 +255,11 @@ async function start() {
     const vrToggle = node('vr-toggle');
     const recenter = node('vr-recenter');
     const vrStatus = node('vr-status');
-    const zoomTools = node('vr-zoom');
     const zoomOut = node('vr-zoom-out'), zoomIn = node('vr-zoom-in');
     function setZoom(next) {
-      zoom = Math.max(1,Math.min(2.25,next));
-      zoomOut.disabled = zoom <= 1;
+      if(runningPrint)return;
+      zoom = Math.max(.75,Math.min(2.25,next));
+      zoomOut.disabled = zoom <= .75;
       zoomIn.disabled = zoom >= 2.25;
       draw();
     }
@@ -263,9 +284,6 @@ async function start() {
           pointer = null;
         }
         for (const control of [play, progress]) control.disabled = engaged;
-        zoomTools.hidden = !active;
-        zoomOut.disabled = zoom <= 1;
-        zoomIn.disabled = zoom >= 2.25;
         vrToggle.textContent = state === 'pending' ? 'Hủy bật VR' : active ? 'Tắt VR' : 'Bật VR';
         vrToggle.setAttribute('aria-pressed', String(active));
         if (!active && document.activeElement === recenter) vrToggle.focus({preventScroll:true});
@@ -273,7 +291,7 @@ async function start() {
         vrStatus.textContent = message;
         vrStatus.hidden = !message;
         experience.toggleAttribute('data-vr', active);
-        if (!engaged) { pinch.clear(); pinchStart = null; orientation = null; zoom = 1; draw(); }
+        if (!engaged) { pinch.clear(); pinchStart = null; orientation = null; draw(); }
       },
     });
     vrToggle.addEventListener('click',()=>vr.engaged ? vr.stop() : vr.start());
@@ -352,11 +370,15 @@ async function start() {
       return Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
     }
     viewport.addEventListener('pointerdown', event => {
-      if (orientation && event.pointerType==='touch' && pinch.size<2) {
+      if (runningPrint) return;
+      if (event.pointerType==='touch' && pinch.size<2) {
         pinch.set(event.pointerId,event);
         viewport.setPointerCapture(event.pointerId);
-        if (pinch.size===2) pinchStart={distance:Math.max(1,pinchDistance()),zoom};
-        return;
+        if (pinch.size===2) {
+          pointer=null;
+          pinchStart={distance:Math.max(1,pinchDistance()),zoom};
+          return;
+        }
       }
       if (pointer || event.button !== 0 || runningPrint || vr.engaged) return;
       stop();
@@ -366,8 +388,7 @@ async function start() {
     viewport.addEventListener('pointermove', event => {
       if (pinch.has(event.pointerId)) {
         pinch.set(event.pointerId,event);
-        if(pinchStart) setZoom(pinchStart.zoom*pinchDistance()/pinchStart.distance);
-        return;
+        if(pinchStart) { setZoom(pinchStart.zoom*pinchDistance()/pinchStart.distance); return; }
       }
       if (!pointer || pointer.id !== event.pointerId) return;
       yaw += (event.clientX-pointer.x)*.004;
@@ -380,6 +401,11 @@ async function start() {
       if(pinch.delete(event.pointerId))pinchStart=null;
       if(pointer?.id===event.pointerId)pointer=null;
     });
+    viewport.addEventListener('wheel',event=>{
+      if(runningPrint||event.ctrlKey||event.metaKey||event.deltaY===0)return;
+      event.preventDefault();
+      setZoom(zoom+(event.deltaY < 0 ? .12 : -.12));
+    },{passive:false});
     viewport.addEventListener('keydown', event => {
       if (runningPrint || vr.engaged) return;
       if (!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Home'].includes(event.key)) return;
@@ -454,7 +480,7 @@ async function start() {
     const director={
       async wash(ghost,cue){
         vr.stop();
-        stop();runningPrint=true;
+        stop();setZoom(1);runningPrint=true;
         stage.classList.add('washing');
         experience.dataset.washing='';
         try {
@@ -520,6 +546,7 @@ async function start() {
     node('controls').hidden=false;
     node('experience-tools').hidden=false;
     vrControls.hidden=!mobile.matches;
+    setZoom(1);
     enableAvatar(director);
     node('portrait-file').focus({preventScroll:true});
   } catch (error) {
