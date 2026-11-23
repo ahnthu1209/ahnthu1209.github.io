@@ -5,3 +5,7 @@ Cảnh 2: journey/p4.webp + journey/s4_ppl_c.webp (Frame 4_VIP.png, tách nhân 
 Cảnh cuối: journey/p8.webp (Frame 8_VIP.png)
 
 Giữ nguyên phần mở thư, hiệu ứng nơ và cánh cửa, các cảnh khác, video, âm thanh, thao tác vuốt và chuyển cảnh.
+
+Cập nhật 23.11.2026:
+- journey/p3.webp: thay bằng Frame_3_VIP.2_1.png; journey/s3_sea.webp dựng lại theo vị trí nhân vật mới (hiệu ứng sóng biển giữ nguyên).
+- journey/p4.webp: thay bằng Frame 2 (chữ The Art of Welcome sạch, hết chồng chữ); nền sau nhân vật làm sạch, lớp s4_ppl_c giữ nguyên.
