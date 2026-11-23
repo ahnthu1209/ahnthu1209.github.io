@@ -84,8 +84,8 @@ export function createPrintScene(T,scene) {
           ring.scale.setScalar(.019+waves*.086);
           rippleMaterial.opacity=.16*(1-waves);
         }
-        pos.set(-.024,1.407+size*.065,1.355);
-        aim.set(tray.x-.04,1.025,tray.z-.012);
+        pos.set(-.34,1.48+size*.065,tray.z);
+        aim.set(tray.x-.04,1.025,tray.z);
       } else {
         const settling=stage==='hang'?ease(bound(t/.61)):1;
         const sway=stage==='hang'?bound((t-.61)/.39):0;

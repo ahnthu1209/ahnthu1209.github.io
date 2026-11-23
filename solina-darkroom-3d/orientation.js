@@ -63,6 +63,9 @@ export function createOrientationControl({loadEngine, getBasis, onFrame, onState
     sample = [event.alpha, event.beta, event.gamma];
     if (state === 'pending') {
       clearTimeout(timer);
+      basis = getBasis(axes.device.constructor, axes.euler.constructor);
+      current.copy(basis);
+      target.copy(basis);
       sensorOrigin = sensorQuaternion(sample, screenAngle(), axes).clone();
       setState('active');
       onFrame(current);
@@ -116,8 +119,13 @@ export function createOrientationControl({loadEngine, getBasis, onFrame, onState
     }
   }
 
-  function recenter() {
+  function recenter(atNewSpot=false) {
     if (state !== 'active') return;
+    if (atNewSpot) {
+      basis = getBasis(axes.device.constructor, axes.euler.constructor);
+      current.copy(basis);
+      onFrame(current);
+    }
     sensorOrigin.copy(sensorQuaternion(sample, screenAngle(), axes));
     updateTarget();
   }

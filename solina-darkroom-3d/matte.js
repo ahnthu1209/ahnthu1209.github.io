@@ -104,6 +104,39 @@ export function refineAlpha(alpha,width,height) {
       clean[i]=Math.min(.30,alpha[i]*1.7);
     }
   }
+  // A light shirt or jacket can split the torso into two strong sides.
+  // Bridge central gaps only when both sides agree across several rows.
+  const torso = components[0];
+  const left = new Int32Array(height).fill(width), right = new Int32Array(height).fill(-1);
+  let top=height, bottom=0;
+  for(let i=0;i<size;i++){
+    if(labels[i]!==torso.label||clean[i]<.8)continue;
+    const x=i%width,y=Math.floor(i/width);
+    left[y]=Math.min(left[y],x);right[y]=Math.max(right[y],x);
+    top=Math.min(top,y);bottom=Math.max(bottom,y);
+  }
+  const stature=bottom-top;
+  const shoulders=[];
+  for(let y=Math.round(top+stature*.28);y<top+stature*.54;y++){
+    if(right[y]>left[y])shoulders.push({span:right[y]-left[y],center:(right[y]+left[y])/2});
+  }
+  shoulders.sort((a,b)=>a.span-b.span);
+  const chest=shoulders[Math.floor(shoulders.length*.65)];
+  if(chest&&stature>=20&&chest.span>=14){
+    const near=Math.max(2,Math.round(stature*.028));
+    for(let y=Math.round(top+stature*.42);y<=top+stature*.88;y++){
+      const lo=left[y],hi=right[y];
+      if(lo>=chest.center||hi<=chest.center||hi-lo<chest.span*.55)continue;
+      for(let x=lo+1;x<hi;){
+        if(clean[y*width+x]>=.68){x++;continue;}
+        const start=x;
+        while(x<hi&&clean[y*width+x]<.68)x++;
+        if(start>chest.center||x<chest.center||x-start>chest.span*.72)continue;
+        if(left[y-near]>start-1||right[y-near]<x||left[Math.min(bottom,y+near)]>start-1||right[Math.min(bottom,y+near)]<x)continue;
+        for(let j=start;j<x;j++)clean[y*width+j]=1;
+      }
+    }
+  }
   // Repair weak matte regions surrounded by the subject. Leave exterior
   // pixels and large clear openings, such as between an arm and the body.
   const interiorThreshold=.66;

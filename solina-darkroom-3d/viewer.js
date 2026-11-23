@@ -1,9 +1,9 @@
-import {enableAvatar} from './avatar.js?v=16';
-import {createPrintScene} from './print-scene.js?v=11';
-import {createPanoramaView} from './panorama.js?v=15';
-import {vertexShader, fragmentShader} from './surfaces.js?v=6';
+import {enableAvatar} from './avatar.js?v=17';
+import {createPrintScene} from './print-scene.js?v=17';
+import {createPanoramaView} from './panorama.js?v=17';
+import {vertexShader, fragmentShader} from './surfaces.js?v=17';
 
-import {createOrientationControl} from './orientation.js?v=15';
+import {createOrientationControl} from './orientation.js?v=17';
 
 const node = id => document.getElementById(id);
 const stage = node('stage');
@@ -120,6 +120,8 @@ async function createWebGLView(canvas,context) {
           baseColor:{value:new THREE.Color(...item.rgb)},
           isWater:{value:item.water},
           hasArtwork:{value:Boolean(art)},
+          cleanSurface:{value:/^(Gạch men|Mạch gạch|Mặt bàn|Cạnh bàn|Gỗ mặt|Nhựa màu ngà|Viền bản in|Giấy bạc|Nhôm của)/.test(item.name)},
+          grout:{value:item.name==='Mạch gạch'},
           surfaceMap:{value:surfaceMap},
           artworkMap:{value:art??surfaceMap},
         },
@@ -142,7 +144,7 @@ async function createWebGLView(canvas,context) {
     const direction = new THREE.Vector3();
     const previous = new THREE.Vector3();
     const next = new THREE.Vector3();
-    function draw({active,value,yaw,pitch,orientation}) {
+    function draw({active,value,yaw,pitch,orientation,zoom=1}) {
       const {width,height}=viewport.getBoundingClientRect();
       if (!width || !height) return;
       const aspect = width/height;
@@ -156,7 +158,7 @@ async function createWebGLView(canvas,context) {
       }
       let angle;
       if (active === 'trays' || active === 'prints') {
-        const p = meta.detail[active === 'trays' ? 0 : 1];
+        const p = active === 'trays' ? [[-.46,1.51,.906],[.949,-.315,0]] : meta.detail[1];
         camera.position.fromArray(p[0]);
         direction.fromArray(p[1]);
         angle = active === 'trays' ? 42 : 49;
@@ -174,11 +176,12 @@ async function createWebGLView(canvas,context) {
         angle = camera.aspect < 1 ? 71 : THREE.MathUtils.radToDeg(2*Math.atan(frameWidth/camera.aspect));
       }
       camera.fov = angle + (camera.aspect < .95 && active && active !== 'entry' ? 12 : 0);
-      camera.updateProjectionMatrix();
       direction.applyAxisAngle(up,active === 'entry' ? Math.max(-.93,Math.min(.93,yaw)) : yaw);
       const heading = Math.atan2(direction.x,-direction.z);
       const tilt = Math.max(-1.2,Math.min(1.2,Math.asin(direction.y)+pitch));
       direction.set(Math.sin(heading)*Math.cos(tilt),Math.sin(tilt),-Math.cos(heading)*Math.cos(tilt));
+      camera.zoom=zoom;
+      camera.updateProjectionMatrix();
       if (orientation) camera.quaternion.copy(orientation);
       else camera.lookAt(target.copy(camera.position).add(direction));
       if(instruction) workshop.frame(instruction.phase,instruction.progress,camera,aspect<1);
@@ -224,11 +227,23 @@ async function start() {
     let startAt = 0;
     let pointer = null;
     let runningPrint=false;
-    let orientation = null;
+    let orientation = null, zoom = 1;
+    const pinch = new Map();
+    let pinchStart = null;
     const vrControls = node('vr-controls');
     const vrToggle = node('vr-toggle');
     const recenter = node('vr-recenter');
     const vrStatus = node('vr-status');
+    const zoomTools = node('vr-zoom');
+    const zoomOut = node('vr-zoom-out'), zoomIn = node('vr-zoom-in');
+    function setZoom(next) {
+      zoom = Math.max(1,Math.min(2.25,next));
+      zoomOut.disabled = zoom <= 1;
+      zoomIn.disabled = zoom >= 2.25;
+      draw();
+    }
+    zoomOut.onclick=()=>setZoom(zoom-.25);
+    zoomIn.onclick=()=>setZoom(zoom+.25);
     const vr = createOrientationControl({
       loadEngine:importThree,
       getBasis(Quaternion, Euler) {
@@ -247,7 +262,10 @@ async function start() {
           if (pointer && viewport.hasPointerCapture(pointer.id)) viewport.releasePointerCapture(pointer.id);
           pointer = null;
         }
-        for (const control of [...spots, play, progress]) control.disabled = engaged;
+        for (const control of [play, progress]) control.disabled = engaged;
+        zoomTools.hidden = !active;
+        zoomOut.disabled = zoom <= 1;
+        zoomIn.disabled = zoom >= 2.25;
         vrToggle.textContent = state === 'pending' ? 'Hủy bật VR' : active ? 'Tắt VR' : 'Bật VR';
         vrToggle.setAttribute('aria-pressed', String(active));
         if (!active && document.activeElement === recenter) vrToggle.focus({preventScroll:true});
@@ -255,17 +273,17 @@ async function start() {
         vrStatus.textContent = message;
         vrStatus.hidden = !message;
         experience.toggleAttribute('data-vr', active);
-        if (!engaged) { orientation = null; draw(); }
+        if (!engaged) { pinch.clear(); pinchStart = null; orientation = null; zoom = 1; draw(); }
       },
     });
     vrToggle.addEventListener('click',()=>vr.engaged ? vr.stop() : vr.start());
-    recenter.addEventListener('click',vr.recenter);
+    recenter.addEventListener('click',()=>vr.recenter());
 
     function formatTime(fraction) {
       return `0:${String(Math.min(10,Math.floor(fraction * 10))).padStart(2,'0')} / 0:10`;
     }
 
-    function draw() { display.draw({active,value,yaw,pitch,orientation}); }
+    function draw() { display.draw({active,value,yaw,pitch,orientation,zoom}); }
     new ResizeObserver(draw).observe(viewport);
 
     function setValue(nextValue) {
@@ -317,23 +335,40 @@ async function start() {
     progress.addEventListener('input', () => navigate(Number(progress.value)/1000));
     for (const button of spots) {
       button.addEventListener('click', () => {
-        if(runningPrint||vr.engaged)return;
+        if(runningPrint)return;
         resetPrint();
         stop();
         active = button.dataset.spot;
         updateButton(active);
         yaw = pitch = 0;
         if (active === 'entry') setValue(0);
+        orientation = null;
         draw();
+        vr.recenter(true);
       });
     }
+    function pinchDistance() {
+      const [a,b]=pinch.values();
+      return Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+    }
     viewport.addEventListener('pointerdown', event => {
+      if (orientation && event.pointerType==='touch' && pinch.size<2) {
+        pinch.set(event.pointerId,event);
+        viewport.setPointerCapture(event.pointerId);
+        if (pinch.size===2) pinchStart={distance:Math.max(1,pinchDistance()),zoom};
+        return;
+      }
       if (pointer || event.button !== 0 || runningPrint || vr.engaged) return;
       stop();
       pointer = {id:event.pointerId,x:event.clientX,y:event.clientY};
       viewport.setPointerCapture(event.pointerId);
     });
     viewport.addEventListener('pointermove', event => {
+      if (pinch.has(event.pointerId)) {
+        pinch.set(event.pointerId,event);
+        if(pinchStart) setZoom(pinchStart.zoom*pinchDistance()/pinchStart.distance);
+        return;
+      }
       if (!pointer || pointer.id !== event.pointerId) return;
       yaw += (event.clientX-pointer.x)*.004;
       pitch = Math.max(-1.12,Math.min(1.12,pitch+(event.clientY-pointer.y)*.004));
@@ -341,7 +376,10 @@ async function start() {
       pointer.y = event.clientY;
       draw();
     });
-    viewport.addEventListener('lostpointercapture', () => {pointer = null;});
+    viewport.addEventListener('lostpointercapture', event => {
+      if(pinch.delete(event.pointerId))pinchStart=null;
+      if(pointer?.id===event.pointerId)pointer=null;
+    });
     viewport.addEventListener('keydown', event => {
       if (runningPrint || vr.engaged) return;
       if (!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Home'].includes(event.key)) return;
@@ -400,7 +438,7 @@ async function start() {
       const d=pan?(phase==='dip'?smooth(clamp(t/.34)):1-smooth(t)):0;
       const k=pan?0:phase==='hang'?smooth(clamp(t/.61)):1;
       const w=landscape?(pan?22:19):(pan?34:32);
-      const x=pan?57:landscape?53:50;
+      const x=pan?50:landscape?53:50;
       const y=pan?blend(53,65,d):blend(62,48,k);
       const safe=pan?d:1-k;
       still.style.setProperty('--sheet-x',x+'%');

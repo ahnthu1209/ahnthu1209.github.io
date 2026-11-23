@@ -9,9 +9,9 @@
   <title>Phòng rửa ảnh Solina · Trải nghiệm 3D</title>
   <link rel="preload" href="./cong/loi-vao.webp" as="image">
   <link rel="preload" href="./cong/canh-cong.webp" as="image">
-  <link rel="stylesheet" href="./style.css?v=16">
+  <link rel="stylesheet" href="./style.css?v=17">
   <link rel="stylesheet" href="./avatar.css?v=14">
-  <script type="module" src="./viewer.js?v=16"></script>
+  <script type="module" src="./viewer.js?v=17"></script>
 </head>
 <body>
   <main class="experience" aria-label="Phòng rửa ảnh Solina">
@@ -43,6 +43,10 @@
       <div class="vr-controls" id="vr-controls" hidden>
         <button id="vr-toggle" type="button" aria-pressed="false">Bật VR</button>
         <button id="vr-recenter" type="button" hidden>Đặt lại hướng nhìn</button>
+      </div>
+      <div class="vr-zoom" id="vr-zoom" role="group" aria-label="Thu phóng góc nhìn VR" hidden>
+        <button id="vr-zoom-out" type="button" aria-label="Thu nhỏ">−</button>
+        <button id="vr-zoom-in" type="button" aria-label="Phóng to">+</button>
       </div>
       <button id="sound-toggle" type="button" aria-label="Bật nhạc nền">Bật nhạc</button>
       <p id="vr-status" class="vr-status" role="status" hidden></p>

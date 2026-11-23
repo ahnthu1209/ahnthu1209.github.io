@@ -3,7 +3,7 @@ const available = new Set([...route,'bacs','tirages']);
 
 async function loadCube(name) {
   const image = new Image();
-  image.src='./panorama/'+name+'-gallery.webp';
+  image.src='./panorama/'+name+'-gallery.webp?v=17';
   await image.decode();
   const size=image.naturalWidth/3;
   if (!Number.isInteger(size) || image.naturalHeight!==size*2) throw new Error('Ảnh 360° không hợp lệ');
@@ -70,7 +70,7 @@ export async function createPanoramaView(viewport) {
   function paint() {
     pending=0;
     if (!settings || !viewport.clientWidth) return;
-    const {active,value,yaw,pitch,orientation}=settings;
+    const {active,value,yaw,pitch,orientation,zoom=1}=settings;
     const index=Math.round(value*(route.length-1));
     const selected=active==='trays' ? 'bacs' : active==='prints' ? 'tirages' : route[index];
     const next=frames.get(selected);
@@ -99,11 +99,11 @@ export async function createPanoramaView(viewport) {
     const portrait=width/height<.95 && (active==='trays'||active==='prints') ? 12 : 0;
     const tilt=Math.max(-1.08,Math.min(1.08,pitch));
     const rotation=active==='entry' ? Math.max(-.93,Math.min(.93,yaw)) : yaw;
-    const projection=[width,height,current.size,field,portrait,
+    const projection=[width,height,current.size,field,portrait,zoom,
       ...(orientation ? orientation.toArray() : [tilt,rotation])].join(':');
     if (cacheKey!==projection) {
       cacheKey=projection;
-      const dx=Math.tan((field+portrait)*Math.PI/360)*2/height;
+      const dx=Math.tan((field+portrait)*Math.PI/360)*2/(height*zoom);
       const upright=Math.cos(tilt);
       const lowered=Math.sin(tilt);
       const ahead=Math.cos(rotation);

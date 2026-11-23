@@ -18,6 +18,8 @@ export const fragmentShader = `
   uniform vec3 baseColor;
   uniform bool isWater;
   uniform bool hasArtwork;
+  uniform bool cleanSurface;
+  uniform bool grout;
   uniform sampler2D surfaceMap;
   uniform sampler2D artworkMap;
   varying vec3 surface;
@@ -53,6 +55,13 @@ export const fragmentShader = `
     } else {
       vec4 sampleColor=texture2D(surfaceMap,lightUV);
       vec3 tint=mix(baseColor*.62,sampleColor.rgb,sampleColor.a);
+      if (cleanSurface) {
+        vec4 blurred=texture2D(surfaceMap,lightUV,2.35);
+        vec3 local=mix(tint,blurred.rgb,blurred.a*.66);
+        tint=mix(tint,max(tint,local*.92),.78);
+        tint=mix(tint,local,.28);
+        if(grout) tint=max(tint,baseColor*.78);
+      }
       if (hasArtwork) {
         vec3 printColor=texture2D(artworkMap,artUV).rgb;
         tint*=pow(clamp(printColor/.78, .0, 1.29),vec3(.82));
