@@ -136,9 +136,50 @@ const e=(s)=>String(s==null?'':s).replace(/[&<>"']/g,ch=>ESC[ch]);
 const attr=e;
 const norm=(s)=>String(s||'').normalize('NFKC').toLowerCase().replace(/[\s\u3000\u200b\p{P}\p{S}]/gu,'');
 const normSearch=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-function load(){try{const obj=JSON.parse(localStorage.getItem(STORAGE)||'{}');return {...{vocab:{},quiz:{},translations:{},activity:{},memory:{},grammar:{},preferences:{},version:1},...obj};}catch(_){return {vocab:{},quiz:{},translations:{},activity:{},memory:{},grammar:{},preferences:{},version:1};}}
+function load(){try{const obj=JSON.parse(localStorage.getItem(STORAGE)||'{}');return {...{vocab:{},quiz:{},translations:{},activity:{},memory:{},grammar:{},studySessions:{},studyHistory:{},studyView:{},preferences:{},version:1},...obj};}catch(_){return {vocab:{},quiz:{},translations:{},activity:{},memory:{},grammar:{},studySessions:{},studyHistory:{},studyView:{},preferences:{},version:1};}}
 let P=load();
 let U={tab:'home',mobile:false,search:'',vocabFilter:'all',vocabPage:0,cardFilter:'unit',unit:0,cardIndex:0,cardFlipped:false,cardShuffle:false,memoryMode:'flashcard',mcqFilter:'unit',mcqOrder:[],mcqIndex:0,mcqOptions:{},mcqAnswered:{},mcqFinished:false,cardOrder:[],quizFilter:'all',quizMode:'source',quizIndex:0,quizDraft:'',quizResult:null,quizShowPy:false,quizShowVi:false,readerGroup:'reading1',readerPy:true,readerVi:true,readerAnswers:false,grammarTab:0,page:1,pageRaw:false,pagePy:true,pageVi:true,sourceRange:'all',sourceSearch:'',importMessage:''};
+
+// hsk4-save-rounds-v2: keep the quiz, last score and place when the browser reopens.
+const savedView=P.studyView&&typeof P.studyView==='object'?P.studyView:{};
+for(const key of ['tab','memoryMode','mcqFilter','cardFilter','quizMode','quizFilter'])if(typeof savedView[key]==='string')U[key]=savedView[key];
+for(const key of ['unit','cardIndex','quizIndex','grammarTab'])if(Number.isInteger(savedView[key])&&savedView[key]>=0)U[key]=savedView[key];
+if(U.unit>3)U.unit=0;
+if(!['flashcard','choice'].includes(U.memoryMode))U.memoryMode='flashcard';
+if(!['home','vocab','cards','grammar','reading','quiz','pages','audit','backup'].includes(U.tab))U.tab='home';
+if(typeof savedView.quizDraft==='string')U.quizDraft=savedView.quizDraft;
+if(['right','wrong','manual'].includes(savedView.quizResult))U.quizResult=savedView.quizResult;
+if(!P.studySessions||typeof P.studySessions!=='object')P.studySessions={};
+if(!P.studyHistory||typeof P.studyHistory!=='object')P.studyHistory={};
+function memorySessionKey(){return U.mcqFilter==='unit'?'unit:'+U.unit:'filter:'+U.mcqFilter;}
+function clearMemorySession(){U.mcqOrder=[];U.mcqIndex=0;U.mcqOptions={};U.mcqAnswered={};U.mcqFinished=false;}
+function restoreMemorySession(){
+ const state=P.studySessions[memorySessionKey()],ids=new Set(D.vocab.map(x=>x.id));
+ if(!state||!Array.isArray(state.order)||!state.order.length||state.order.some(id=>!ids.has(id))){clearMemorySession();return false;}
+ U.mcqOrder=state.order.slice(0,10);
+ U.mcqIndex=Number.isInteger(state.index)?Math.max(0,Math.min(U.mcqOrder.length-1,state.index)):0;
+ U.mcqOptions=state.options&&typeof state.options==='object'?state.options:{};
+ U.mcqAnswered=state.answered&&typeof state.answered==='object'?state.answered:{};
+ U.mcqFinished=!!state.finished;return true;
+}
+function saveMemorySession(){
+ if(!Array.isArray(U.mcqOrder)||!U.mcqOrder.length)return;
+ P.studySessions[memorySessionKey()]={order:[...U.mcqOrder],index:U.mcqIndex,options:U.mcqOptions,answered:U.mcqAnswered,finished:U.mcqFinished,savedAt:new Date().toISOString()};
+ persist();
+}
+function latestRound(unit){return P.studyHistory['unit:'+unit]||null;}
+function unitSessionLabel(unit){
+ const last=latestRound(unit),active=P.studySessions['unit:'+unit],parts=[];
+ if(last)parts.push('✓ Lượt gần nhất '+last.correct+'/'+last.total+' câu');
+ if(active&&!active.finished&&Array.isArray(active.order)&&active.order.length)parts.push('⏳ Đang làm '+Object.keys(active.answered||{}).length+'/'+active.order.length+' câu');
+ return parts.join(' · ');
+}
+function saveStudyView(){
+ P.studyView={tab:U.tab,unit:U.unit,memoryMode:U.memoryMode,mcqFilter:U.mcqFilter,cardFilter:U.cardFilter,cardIndex:U.cardIndex,quizMode:U.quizMode,quizFilter:U.quizFilter,quizIndex:U.quizIndex,quizDraft:U.quizDraft,quizResult:U.quizResult,grammarTab:U.grammarTab};
+ persist();
+}
+restoreMemorySession();
+
 let toastTimer;
 function message(s){let el=document.getElementById('toast');el.textContent=s;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2400)}
 function persist(){P.updatedAt=new Date().toISOString();try{localStorage.setItem(STORAGE,JSON.stringify(P))}catch(err){message('Trình duyệt không cho lưu tiến độ. Hãy xuất bản sao để giữ dữ liệu.')}}
@@ -189,14 +230,14 @@ function skillMeters(){
 }
 function unitSelector(){
  let s='<div class="stage-heading"><strong>Học từ vựng theo 4 chặng</strong><span>Mỗi lượt kiểm tra 10 từ, bao phủ toàn chặng theo tiến độ</span></div><div class="unit-grid">';
- for(let i=0;i<4;i++){const x=wordStats(fourUnits(i));s+='<div class="unit '+(U.unit===i?'selected':'')+'"><div class="unit-name">CHẶNG '+(i+1)+'<small>'+x.total+' từ</small></div><div class="unit-info">'+x.known+' đã đánh dấu thuộc<br><b>'+x.correct+'/'+x.total+' kiểm tra đúng · '+x.pct+'%</b></div><div class="progress-track"><div class="progress-bar" style="width:'+x.pct+'%"></div></div><div class="unit-controls"><button data-unit-learn="'+i+'">▣ Học Flashcard</button><button class="secondary" data-unit-test="'+i+'">✎ Kiểm tra 10 câu</button></div></div>';}
+ for(let i=0;i<4;i++){const x=wordStats(fourUnits(i));s+='<div class="unit '+(U.unit===i?'selected':'')+'"><div class="unit-name">CHẶNG '+(i+1)+'<small>'+x.total+' từ</small></div><div class="unit-info">'+x.known+' đã đánh dấu thuộc<br><b>'+x.correct+'/'+x.total+' kiểm tra đúng · '+x.pct+'%</b>'+(unitSessionLabel(i)?'<br><strong class="saved-round">'+unitSessionLabel(i)+'</strong>':'')+'</div><div class="progress-track"><div class="progress-bar" style="width:'+x.pct+'%"></div></div><div class="unit-controls"><button data-unit-learn="'+i+'">▣ Học Flashcard</button><button class="secondary" data-unit-test="'+i+'">✎ Kiểm tra 10 câu</button></div></div>';}
  return s+'</div><div class="unit-note">Từ vựng tính % theo lần chọn nghĩa <b>gần nhất</b>; sai sẽ quay lại danh sách “Từ khó”. Từ vựng vẫn giữ đúng thứ tự của tài liệu trong từng chặng.</div>';
 }
 function setUnit(i,test){
  if(!Number.isInteger(i)||i<0||i>3)return;
  U.unit=i;U.cardFilter='unit';U.mcqFilter='unit';U.memoryMode=test?'choice':'flashcard';
- U.cardIndex=0;U.cardFlipped=false;U.cardShuffle=false;U.cardOrder=[];U.mcqOrder=[];U.mcqOptions={};U.mcqAnswered={};U.mcqFinished=false;
- if(test)memoryPrepare();render();
+ U.cardIndex=0;U.cardFlipped=false;U.cardShuffle=false;U.cardOrder=[];
+ if(!restoreMemorySession()&&test)memoryPrepare();render();
 }
 function gramSave(i,status){
  if(!grammarTopics[i])return;
@@ -229,6 +270,7 @@ function memoryPrepare(){
  const d=memoryBank(),remaining=memoryShuffle(d.filter(x=>!isWordVerified(x.id))),passed=memoryShuffle(d.filter(x=>isWordVerified(x.id)));
  U.mcqOrder=[...remaining,...passed].slice(0,10).map(x=>x.id);
  U.mcqIndex=0;U.mcqOptions={};U.mcqAnswered={};U.mcqFinished=false;
+ saveMemorySession();
 }
 function memoryNorm(x){return normSearch(x).replace(/[^a-z0-9\u00c0-\u1eff]+/gi,' ').trim();}
 function memoryClash(a,b){
@@ -249,6 +291,7 @@ function memoryOptions(v){
  if(picks.length<4){for(const x of D.vocab){if(picks.length===4)break;if(x.id!==v.id&&x.vi&&!picks.some(y=>y.vi===x.vi))picks.push(x);}}
  const opts=memoryShuffle(picks.map(x=>({id:x.id,vi:x.vi})));
  U.mcqOptions[v.id]=opts;
+ saveMemorySession();
  return opts;
 }
 function memoryChoose(selectedId){
@@ -259,12 +302,18 @@ function memoryChoose(selectedId){
  U.mcqAnswered[id]={selected:selectedId,correct:good};
  P.memory[id]={attempts:(prev.attempts||0)+1,correct:(prev.correct||0)+(good?1:0),wrong:(prev.wrong||0)+(good?0:1),lastCorrect:good,lastAt:new Date().toISOString()};
  P.vocab[id]={...(P.vocab[id]||{}),status:good?'known':'review',lastReviewed:new Date().toISOString()};
- tracked();render();
+ saveMemorySession();tracked();render();
 }
 function memoryNext(){
  if(U.mcqOrder.length===0)return;
- if(U.mcqIndex>=U.mcqOrder.length-1){U.mcqFinished=true;}else{U.mcqIndex++;}
- render();
+ if(U.mcqIndex>=U.mcqOrder.length-1){
+  if(!U.mcqFinished){
+   U.mcqFinished=true;
+   const right=Object.values(U.mcqAnswered).filter(x=>x.correct).length,key=memorySessionKey(),old=P.studyHistory[key]||{};
+   P.studyHistory[key]={correct:right,total:U.mcqOrder.length,best:Math.max(right,old.best||0),rounds:(old.rounds||0)+1,completedAt:new Date().toISOString()};
+  }
+ }else{U.mcqIndex++;}
+ saveMemorySession();render();
 }
 function memoryGame(){
  if(!U.mcqOrder.length)memoryPrepare();
@@ -277,7 +326,7 @@ function memoryGame(){
   body='<div class="mcq-result"><h2>Chưa có từ để luyện</h2><p>Hãy chọn “Toàn bộ”, hoặc vào Flashcard đánh dấu “Chưa nhớ” để tạo bộ từ khó.</p><button class="btn primary" data-mfilter="all">Học toàn bộ từ →</button></div>';
  }else if(U.mcqFinished){
   const accuracy=Math.round(right/U.mcqOrder.length*100);
-  body='<div class="mcq-result"><img class="bee-result" width="100" height="100" loading="lazy" src="/hsk4/assets/bee-'+(accuracy===100?'happy':'wink')+'.png" alt="Ong chúc mừng"><span class="pill core">HOÀN THÀNH LƯỢT ÔN</span><div class="bigscore">'+right+' / '+U.mcqOrder.length+'</div><h2>'+ (accuracy===100?'Tuyệt vời! Bạn nhớ rất tốt.':'Đã hoàn thành một lượt ghi nhớ!')+'</h2>'
+  body='<div class="mcq-result"><img class="bee-result" width="100" height="100" loading="lazy" src="/hsk4/assets/bee-'+(accuracy===100?'happy':'wink')+'.png" alt="Ong chúc mừng"><span class="pill core">HOÀN THÀNH LƯỢT ÔN</span><div class="bigscore">'+right+' / '+U.mcqOrder.length+'</div><h2>'+ (accuracy===100?'Tuyệt vời! Bạn nhớ rất tốt.':'Đã hoàn thành một lượt ghi nhớ!')+'</h2><p class="saved-round">✓ Kết quả lượt này đã được lưu, mở lại vẫn xem được.</p>'
   +'<p>Đúng '+right+' câu, sai '+(U.mcqOrder.length-right)+' câu. Chặng '+(U.unit+1)+' đã kiểm tra đúng '+wordStats(fourUnits(U.unit)).correct+'/'+fourUnits(U.unit).length+' từ. Từ sai đã đưa vào “Từ khó”.</p>'
   +'<div class="mcq-actions"><button class="btn primary" data-act="memoryRestart">Kiểm tra 10 từ tiếp ↗</button><button class="btn outline" data-mfilter="review">Ôn từ khó ↺</button>'+(U.unit<3?'<button class="btn outline" data-act="nextUnit">Học chặng tiếp →</button>':'')+'</div></div>';
  }else{
@@ -359,8 +408,8 @@ function pageContent(){const arr=D.entries.filter(x=>x.page===U.page);return U.p
 function pages(){let s=heading('THƯ VIỆN TÀI LIỆU','89 trang nguyên bản chữ','Lần theo từng trang, giữ đúng thứ tự; chọn “Dòng nguồn” để xem nguyên văn, kể cả phần bị lệch cặp chữ Hán/pinyin/tiếng Việt.');const notes=D.audit.filter(x=>x.page===U.page);return s+`<div class="toolbar"><div class="source-nav"><button class="btn small outline" data-act="pagePrev" ${U.page===1?'disabled':''}>← Trước</button><label class="mini-note">Trang <input id="gotoPage" type="number" min="1" max="89" value="${U.page}"> / 89</label><button class="btn small outline" data-act="gotoPage">Đến trang</button><button class="btn small outline" data-act="pageNext" ${U.page===89?'disabled':''}>Sau →</button></div><div class="chips" style="margin-left:auto"><button class="chip ${U.pageRaw?'active':''}" data-act="pageRaw">Dòng nguồn</button><button class="chip ${U.pagePy?'active':''}" data-act="pagePy">Pinyin</button><button class="chip ${U.pageVi?'active':''}" data-act="pageVi">Tiếng Việt</button></div></div><div class="source-panel"><div><div class="info-card" style="margin-bottom:16px"><div class="eyebrow">TRANG ${pad(U.page)} / 89</div><h3 style="margin:8px 0">${e(pageName(U.page))}</h3><div class="mini-note">${D.entries.filter(x=>x.page===U.page).length} nhóm nội dung · Câu trích từ bản Word</div></div>${notes.map(n=>`<div class="reminder" style="margin:0 0 14px"><span class="symbol">⚑</span><div><strong>${n.severity==='corrected'?'Đã đề xuất hiệu đính':'Đang chờ đối chiếu'}</strong>${e(n.reason)}</div></div>`).join('')}<div class="lesson-list">${pageContent()}</div></div><aside class="source-side"><strong>Chọn nhanh trang</strong><p>Trang có gạch cam là trang có ghi chú cần đối chiếu. Bạn vẫn có thể xem bản chữ Hán gốc.</p><div class="page-tiles">${Array.from({length:89},(_,i)=>`<button class="page-tile ${U.page===i+1?'active':''} ${D.audit.some(a=>a.page===i+1)?'problem':''}" title="Trang ${i+1}" data-page="${i+1}">${i+1}</button>`).join('')}</div><div style="margin-top:14px"><button class="btn small soft" data-tab="audit">Xem kiểm tra nguồn ↗</button></div></aside></div>`}
 function audit(){return heading('KIỂM SOÁT CHẤT LƯỢNG','Đối chiếu & hiệu đính','Giữ nguyên dữ liệu gốc, chỉ ghi nhận sửa chữa được xác minh; những chỗ còn thiếu không được tự hoàn thiện.')+`<div class="cards3">${stat('Trang trong file',D.meta.pages,'Đã nhận đủ các nhãn trang từ 01–89','▤')}${stat('Nhóm dữ liệu',D.meta.stats.entries,'Bao gồm nội dung, đáp án và chú thích','文')}${stat('Ghi chú cần kiểm tra',D.audit.length,'Có hiệu đính và các trường hợp thiếu nguồn','⚑')}</div><div class="section-line"><h2>Danh sách kiểm tra (${D.audit.length})</h2><span>Có số trang đối chiếu</span></div>${D.audit.map(a=>`<article class="audit-row"><div class="split"><h3>Trang ${pad(a.page)} · ${a.severity==='corrected'?'Hiệu đính có căn cứ':a.severity==='transcribed'?'Nội dung tiếng Việt chép từ ảnh':a.severity==='missing'?'Thiếu dữ liệu chữ':'Cần kiểm tra'}</h3><span class="pill ${a.severity==='corrected'?'ok':'warn'}">${a.severity==='corrected'?'Đề xuất sửa':a.severity==='transcribed'?'Đã đọc từ ảnh':'Chưa tự sửa'}</span></div><div class="mini-note">BẢN GỐC</div><div class="audit-block han">${e(a.source)}</div>${a.suggested?`<div class="mini-note" style="margin-top:14px">ĐỀ XUẤT HIỆU ĐÍNH</div><div class="audit-block good han">${e(a.suggested)}</div>`:''}<p>${e(a.reason)}</p><button class="btn small outline" data-page="${a.page}">Xem trang ${pad(a.page)} →</button></article>`).join('')}<div class="reminder"><span class="symbol">ℹ</span><div><strong>Giới hạn cần biết</strong>File đang dùng là bản Word được chuyển từ tài liệu gốc, không phải bản ghi âm của giáo viên. Một số cách ghi pinyin, lỗi cách và hình ảnh riêng của trang chưa được xác minh từng ký tự với PDF gốc. Các trường hợp chưa xác minh không được mặc định là đúng hoặc tự chấm sai.</div></div>`}
 function backup(){const m=metaProgress();const saved=P.updatedAt?new Date(P.updatedAt).toLocaleString('vi-VN'):'Chưa có';return heading('DỮ LIỆU CÁ NHÂN','Lưu & khôi phục tiến độ','Tiến độ tự lưu trong trình duyệt. Để đổi máy hoặc điện thoại, hãy xuất file rồi nhập vào trình duyệt khác.')+`<div class="progress-grid"><section class="save-box"><span class="pill core">LƯU TRONG MÁY NÀY</span><h3 style="margin-top:16px">Tiến độ hiện tại</h3><p>${m.known} từ thuộc · ${m.review} từ cần ôn · ${m.attempted} câu đã làm<br>Đã lưu gần nhất: <strong>${e(saved)}</strong></p><div class="saving-message">Không cần tạo tài khoản. Dữ liệu được lưu bằng bộ nhớ trình duyệt (localStorage), không gửi lên Google Drive hay server.</div><button class="btn primary" style="margin-top:20px" data-act="export">↓ Xuất tiến độ (.json)</button></section><section class="save-box"><span class="pill extra">CHUYỂN THIẾT BỊ</span><h3 style="margin-top:16px">Nhập lại tiến độ</h3><p>Chọn tệp .json đã xuất từ website này. Việc nhập sẽ thay thế tiến độ của trình duyệt hiện tại.</p><input id="progressFile" type="file" accept=".json,application/json" style="width:100%;border:1px dashed #cbd7e0;padding:19px;border-radius:12px;background:#fafcfe;margin:5px 0 12px"><button class="btn outline" data-act="import">↑ Nhập tệp tiến độ</button>${U.importMessage?`<p>${e(U.importMessage)}</p>`:''}</section></div><div class="reminder"><span class="symbol">☁</span><div><strong>Triển khai online và đồng bộ</strong>Website có thể đưa lên hosting tĩnh và mở bằng link HTTPS. Tuy nhiên, để đồng bộ tự động tiến độ giữa nhiều thiết bị, cần bổ sung đăng nhập/cơ sở dữ liệu; phiên bản này có chức năng xuất/nhập JSON để chuyển an toàn, tránh hứa hẹn đồng bộ không có thật.</div></div>`}
-function render(){let body={home,vocab,cards,grammar,reading,quiz,pages,audit,backup}[U.tab]?.()||home();document.getElementById('app').innerHTML=shell(body);document.title=`${mainSections.find(x=>x[0]===U.tab)?.[2]||'HSK4'} · HSK4 Classroom`}
-function switchTab(s){U.tab=s;U.mobile=false;U.quizResult=null;history.replaceState(null,'','#'+s);render();window.scrollTo({top:0,behavior:'instant'})}
+function render(){let body={home,vocab,cards,grammar,reading,quiz,pages,audit,backup}[U.tab]?.()||home();document.getElementById('app').innerHTML=shell(body);document.title=`${mainSections.find(x=>x[0]===U.tab)?.[2]||'HSK4'} · HSK4 Classroom`;saveStudyView()}
+function switchTab(s){U.tab=s;U.mobile=false;history.replaceState(null,'','#'+s);render();window.scrollTo({top:0,behavior:'instant'})}
 function advanceCards(i){const d=cardDeck();U.cardIndex=Math.min(d.length-1,Math.max(0,U.cardIndex+i));U.cardFlipped=false;render()}
 function advanceQuiz(i){const arr=quizList();U.quizIndex=Math.min(arr.length-1,Math.max(0,U.quizIndex+i));U.quizDraft='';U.quizResult=null;render()}
 function speak(text){if(!('speechSynthesis'in window)){message('Trình duyệt này không hỗ trợ đọc văn bản.');return}try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='zh-CN';u.rate=.85;u.pitch=1;const voices=speechSynthesis.getVoices();const zh=voices.find(x=>/^zh[-_](CN|Hans)/i.test(x.lang))||voices.find(x=>/^zh/i.test(x.lang));if(zh)u.voice=zh;speechSynthesis.speak(u);if(!zh)message('Chưa tìm thấy giọng Trung phù hợp; âm thanh phụ thuộc trình duyệt.')}catch(_){message('Không phát được âm thanh trên thiết bị này.')}}
@@ -373,7 +422,7 @@ function quizCheck(reveal){const arr=quizList();const x=arr[U.quizIndex];if(!x)r
 async function importData(){const input=document.getElementById('progressFile');if(!input?.files?.length){message('Hãy chọn tệp JSON trước.');return}try{let raw=JSON.parse(await input.files[0].text());if(raw?.app!=='HSK4_BAI11'||!raw.progress||typeof raw.progress!=='object'||Array.isArray(raw.progress))throw Error('Không đúng tệp tiến độ HSK4 Bài 11.');
  const data=raw.progress;for(const k of ['vocab','quiz','translations','activity']){if(!data[k]||typeof data[k]!=='object'||Array.isArray(data[k]))throw Error('Tệp thiếu phần '+k)}
  if(!confirm('Nhập tệp này sẽ thay thế tiến độ đã lưu trên trình duyệt. Tiếp tục?'))return;
- P={...load(),vocab:data.vocab,quiz:data.quiz,translations:data.translations,activity:data.activity,memory:data.memory&&typeof data.memory==='object'?data.memory:{},grammar:data.grammar&&typeof data.grammar==='object'?data.grammar:{},preferences:data.preferences||{}};persist();U.importMessage='Đã nhập tiến độ.';message('Khôi phục tiến độ thành công.');render();}catch(err){message('Không thể nhập: '+err.message)}}
+ P={...load(),vocab:data.vocab,quiz:data.quiz,translations:data.translations,activity:data.activity,memory:data.memory&&typeof data.memory==='object'?data.memory:{},grammar:data.grammar&&typeof data.grammar==='object'?data.grammar:{},studySessions:data.studySessions&&typeof data.studySessions==='object'?data.studySessions:{},studyHistory:data.studyHistory&&typeof data.studyHistory==='object'?data.studyHistory:{},studyView:data.studyView&&typeof data.studyView==='object'?data.studyView:{},preferences:data.preferences||{}};persist();U.importMessage='Đã nhập tiến độ.';message('Khôi phục tiến độ thành công.');render();}catch(err){message('Không thể nhập: '+err.message)}}
 function exportData(){const payload=JSON.stringify({app:'HSK4_BAI11',version:1,exportedAt:new Date().toISOString(),progress:P},null,2);const blob=new Blob([payload],{type:'application/json'});const link=document.createElement('a');const url=URL.createObjectURL(blob);link.href=url;link.download='HSK4_Bai11_TienDo_'+today()+'.json';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);message('Đã tạo file xuất tiến độ.');}
 function shuffle(){const arr=cardDeck();const ids=arr.map(x=>x.id);for(let i=ids.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[ids[i],ids[j]]=[ids[j],ids[i]];}U.cardOrder=ids;U.cardShuffle=true;U.cardIndex=0;U.cardFlipped=false;render();message('Đã trộn thứ tự thẻ.');}
 const acts={soundToggle(){SFX.toggle();render()},nextUnit(){setUnit(Math.min(3,U.unit+1),false)},memoryRestart(){memoryPrepare();render()},memoryNext(){memoryNext()},mobile(){U.mobile=!U.mobile;render()},mobileClose(){U.mobile=false;render()},vocabPrev(){U.vocabPage=Math.max(0,U.vocabPage-1);render()},vocabNext(){U.vocabPage++;render()},shuffle,flip(){U.cardFlipped=!U.cardFlipped;render()},cardPrev(){advanceCards(-1)},cardNext(){advanceCards(1)},quizPrev(){advanceQuiz(-1)},quizNext(){advanceQuiz(1)},quizPy(){U.quizShowPy=!U.quizShowPy;render()},quizVi(){U.quizShowVi=!U.quizShowVi;render()},quizClear(){U.quizDraft='';U.quizResult=null;render()},quizReveal(){quizCheck(true)},quizCheck(){quizCheck(false)},readerPy(){U.readerPy=!U.readerPy;render()},readerVi(){U.readerVi=!U.readerVi;render()},readerAnswers(){U.readerAnswers=!U.readerAnswers;render()},pageRaw(){U.pageRaw=!U.pageRaw;render()},pagePy(){U.pagePy=!U.pagePy;render()},pageVi(){U.pageVi=!U.pageVi;render()},pagePrev(){gotoPage(U.page-1)},pageNext(){gotoPage(U.page+1)},gotoPage(){gotoPage(document.getElementById('gotoPage')?.value)},export:exportData,import:importData};
@@ -381,8 +430,8 @@ document.addEventListener('click',ev=>{const hit=ev.target.closest('[data-act],[
  if(hit.dataset.unitLearn!==undefined){setUnit(Number(hit.dataset.unitLearn),false);return}
  if(hit.dataset.unitTest!==undefined){setUnit(Number(hit.dataset.unitTest),true);return}
  if(hit.dataset.gstate){gramSave(Number(hit.dataset.gidx),hit.dataset.gstate);return}
- if(hit.dataset.mmode){U.memoryMode=hit.dataset.mmode;render();return}
- if(hit.dataset.mfilter){U.mcqFilter=hit.dataset.mfilter;memoryPrepare();render();return}
+ if(hit.dataset.mmode){U.memoryMode=hit.dataset.mmode;if(U.memoryMode==='choice'&&!restoreMemorySession())memoryPrepare();render();return}
+ if(hit.dataset.mfilter){U.mcqFilter=hit.dataset.mfilter;if(!restoreMemorySession())memoryPrepare();render();return}
  if(hit.dataset.mchoice){memoryChoose(hit.dataset.mchoice);return}
  if(hit.dataset.tab){switchTab(hit.dataset.tab);return}
  if(hit.dataset.page){gotoPage(hit.dataset.page);return}
@@ -396,7 +445,7 @@ document.addEventListener('click',ev=>{const hit=ev.target.closest('[data-act],[
  if(hit.dataset.speak){speak(hit.dataset.speak);return}
  if(hit.dataset.act&&acts[hit.dataset.act]){acts[hit.dataset.act]();return}
 });
-document.addEventListener('input',ev=>{if(ev.target.id==='searchVocab'){U.search=ev.target.value;U.vocabPage=0;const pane=document.getElementById('vocab-results');if(pane)pane.outerHTML=vocabList();}else if(ev.target.id==='quizDraft'){U.quizDraft=ev.target.value;}});
+document.addEventListener('input',ev=>{if(ev.target.id==='searchVocab'){U.search=ev.target.value;U.vocabPage=0;const pane=document.getElementById('vocab-results');if(pane)pane.outerHTML=vocabList();}else if(ev.target.id==='quizDraft'){U.quizDraft=ev.target.value;saveStudyView();}});
 document.addEventListener('change',ev=>{if(ev.target.id==='readerGroup'){U.readerGroup=ev.target.value;render()}});
 document.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&ev.target.id==='gotoPage'){gotoPage(ev.target.value);return}if(U.tab==='cards'&&!['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)){if(U.memoryMode==='choice'){if(/^[1-4]$/.test(ev.key)&&!U.mcqFinished){const id=U.mcqOrder[U.mcqIndex],v=D.vocab.find(x=>x.id===id);if(v){const options=memoryOptions(v),picked=options[Number(ev.key)-1];if(picked){ev.preventDefault();memoryChoose(picked.id)}}}else if(ev.key==='Enter'&&!U.mcqFinished&&U.mcqAnswered[U.mcqOrder[U.mcqIndex]]){ev.preventDefault();memoryNext()}}else{if(ev.key==='ArrowRight'){ev.preventDefault();advanceCards(1)}if(ev.key==='ArrowLeft'){ev.preventDefault();advanceCards(-1)}if(ev.key===' '){ev.preventDefault();U.cardFlipped=!U.cardFlipped;render()}}}});
 window.addEventListener('hashchange',()=>{const section=location.hash.replace('#','');if(mainSections.some(a=>a[0]===section)&&U.tab!==section){U.tab=section;render()}});
