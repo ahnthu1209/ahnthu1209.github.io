@@ -3,6 +3,44 @@
    Exercises / translated homework pages are intentionally excluded from the learning UI. */
 (()=>{
 'use strict';
+
+// Small original feedback chimes, synthesized locally on answer clicks. No media downloads.
+const SFX=(()=>{
+ const KEY='hsk-classroom-sfx-enabled-v1';
+ let on=true,ctx=null;
+ try{on=localStorage.getItem(KEY)!=='off';}catch(_){}
+ function toggle(){on=!on;try{localStorage.setItem(KEY,on?'on':'off');}catch(_){}return on;}
+ function play(result){
+  if(!on)return;
+  try{
+   const Audio=window.AudioContext||window.webkitAudioContext;
+   if(!Audio)return;
+   if(!ctx)ctx=new Audio();
+   if(ctx.state==='suspended')ctx.resume().catch(()=>{});
+   const t=ctx.currentTime+.012;
+   function note(freq,delay,duration,volume,type='sine',endFreq=0){
+    const osc=ctx.createOscillator(),gain=ctx.createGain(),at=t+delay;
+    osc.type=type;osc.frequency.setValueAtTime(freq,at);
+    if(endFreq)osc.frequency.exponentialRampToValueAtTime(endFreq,at+duration*.85);
+    gain.gain.setValueAtTime(.0001,at);
+    gain.gain.exponentialRampToValueAtTime(volume,at+.018);
+    gain.gain.exponentialRampToValueAtTime(.0001,at+duration);
+    osc.connect(gain);gain.connect(ctx.destination);
+    osc.start(at);osc.stop(at+duration+.03);
+   }
+   if(result==='correct'||result==='right'){
+    note(523.25,0,.19,.047);
+    note(659.25,.085,.20,.045);
+    note(783.99,.18,.28,.052);
+   }else if(result==='wrong'){
+    note(365,0,.30,.041,'triangle',245);
+    note(235,.17,.28,.028,'sine',170);
+   }
+  }catch(_){/* Never stop study if audio is unavailable. */}
+ }
+ return {get enabled(){return on;},toggle,play};
+})();
+
 const D=window.HSK3_DATA;
 const app=document.getElementById('app');
 if(!D||!app){document.body.textContent='Không thể tải dữ liệu bài học.';return;}
@@ -23,7 +61,7 @@ function wordCorrect(w){return P.memory[w.id]?.lastCorrect===true;}
 function wordStats(words){let verified=words.filter(wordCorrect).length,marked=words.filter(w=>P.self[w.id]==='known').length,review=words.filter(w=>P.self[w.id]==='review'||P.memory[w.id]?.lastCorrect===false).length;return {total:words.length,verified,marked,review,pct:pct(verified,words.length)};}
 function grammarStats(l){let verified=l.grammar.filter(g=>P.grammar[g.id]==='known').length;return {total:l.grammar.length,verified,pct:pct(verified,l.grammar.length)};}
 function stageWords(l,idx){if(idx===-1)return l.words;const n=l.words.length,k=Math.floor(n/4),r=n%4,start=idx*k+Math.min(idx,r);return l.words.slice(start,start+k+(idx<r?1:0));}
-function header(){return `<header class="site-header"><div class="site-wrap header-inner"><a class="brand" href="/hsk3/"><span class="brand-mark">中</span><span>HSK3 CLASSROOM<small class="brand-sub">VOCABULARY & GRAMMAR</small></span></a><nav class="header-links" aria-label="Điều hướng"><a href="/hsk3/">10 bài ôn tập</a><a href="/hsk4/">Học HSK4</a><a href="/hsk3/" class="header-cta">Chọn bài ↗</a></nav></div></header>`;}
+function header(){return `<header class="site-header"><div class="site-wrap header-inner"><a class="brand" href="/hsk3/"><span class="brand-mark">中</span><span>HSK3 CLASSROOM<small class="brand-sub">VOCABULARY & GRAMMAR</small></span></a><nav class="header-links" aria-label="Điều hướng"><a href="/hsk3/">10 bài ôn tập</a><a href="/hsk4/">Học HSK4</a><a href="/hsk3/" class="header-cta">Chọn bài ↗</a><button type="button" class="sfx-toggle" data-action="sound-toggle" aria-label="${SFX.enabled?'Tắt':'Bật'} âm thanh đáp án" aria-pressed="${SFX.enabled}"><span aria-hidden="true">${SFX.enabled?'🔊':'🔇'}</span><span class="sfx-label">${SFX.enabled?'Âm bật':'Âm tắt'}</span></button></nav></div></header>`;}
 function footer(){return `<footer class="footer"><div class="site-wrap footer-inner"><span>HSK3 Classroom · Ôn tập 1 · Chỉ từ mới và ngữ pháp</span><span><a href="/hsk4/">HSK4 Classroom ↗</a> · Nguồn: PDF 46 trang</span></div></footer>`;}
 function meter(title,part,whole,isBlue=false,description=''){return `<div class="meter"><div class="meter-top"><strong>${esc(title)}</strong><b>${pct(part,whole)}%</b></div><div class="progress-track"><div class="progress-fill ${isBlue?'blue':''}" style="width:${pct(part,whole)}%"></div></div><p>${esc(description||`${part}/${whole} đã hoàn thành`)}</p></div>`;}
 function hub(){
@@ -53,7 +91,7 @@ function quizPanel(l,words){const q=UI.quiz;if(!q)return `<div class="quiz-end">
 function grammarPanel(l){return `<section><div class="lesson-section-head"><div><h2>Ngữ pháp Bài ${l.number}</h2><p>Toàn bộ nội dung từ ${l.grammar.length} trang ngữ pháp của tài liệu, giữ đúng thứ tự dòng.</p></div><img src="${bee.thinking}" width="75" height="75" alt="Ong đang suy nghĩ"></div><div class="grammar-stack">${l.grammar.map(g=>{const state=P.grammar[g.id],lines=g.lines.map(x=>`<div class="gline ${esc(x.kind)}">${esc(x.text)}</div>`).join('');return `<article class="grammar-topic"><div class="grammar-top"><div><span class="eyebrow">NGỮ PHÁP · TRANG ${pad(g.page)}</span><h3>${esc(g.title)}</h3></div><span class="tag ${state==='known'?'blue':''}">${state==='known'?'✓ Đã hiểu':state==='review'?'↺ Ôn lại':'Chưa đánh giá'}</span></div><div class="grammar-body">${lines}</div><div class="grammar-actions"><span>Đọc công thức và ví dụ, sau đó tự đánh giá:</span><div class="buttons"><button class="btn small ${state==='known'?'blue':'light'}" data-action="gram-state" data-id="${g.id}" data-value="known">✓ Đã hiểu</button><button class="btn small ${state==='review'?'soft':'light'}" data-action="gram-state" data-id="${g.id}" data-value="review">↺ Cần ôn</button></div></div></article>`;}).join('')}</div><div class="flat-note">Tiến độ ngữ pháp dựa trên <b>tự xác nhận đã hiểu</b> từng trang. Website không suy diễn rằng bạn đã thành thạo nếu chưa làm kiểm tra thực hành.</div></section>`;}
 function render(){app.innerHTML=lesson?lessonHeader(lesson):hub();document.title=lesson?`HSK3 · Bài ${lesson.number} · Từ mới & Ngữ pháp`:'HSK3 Classroom · Ôn tập 1 · 10 bài';}
 document.addEventListener('click',ev=>{
- const b=ev.target.closest('[data-action]');if(!b||!lesson)return;
+ const b=ev.target.closest('[data-action]');if(!b)return;if(b.dataset.action==='sound-toggle'){SFX.toggle();render();return;}if(!lesson)return;
  const a=b.dataset.action,v=b.dataset.value,id=b.dataset.id;
  if(a==='tab'){UI.tab=v;UI.search='';UI.quiz=null;render();return;}
  if(a==='mode'){UI.mode=v;UI.search='';UI.cardIndex=0;UI.flipped=false;if(v==='quiz'&&!UI.quiz)startQuiz(lesson);else render();return;}
@@ -64,7 +102,7 @@ document.addEventListener('click',ev=>{
  if(a==='quiz-start'){startQuiz(lesson);return;}
  if(a==='quiz-answer'){
   const q=UI.quiz;if(!q||q.done||q.picked!==null)return;const question=q.items[q.index];if(!question.options.some(opt=>opt.id===id))return;q.picked=id;
-  const good=id===question.id;q.correct+=good?1:0;
+  const good=id===question.id;q.correct+=good?1:0;SFX.play(good?'correct':'wrong');
   const prev=P.memory[question.id]||{attempts:0,correct:0};P.memory[question.id]={attempts:prev.attempts+1,correct:prev.correct+(good?1:0),lastCorrect:good,lastAt:new Date().toISOString()};
   if(!good)P.self[question.id]='review';save();render();return;
  }

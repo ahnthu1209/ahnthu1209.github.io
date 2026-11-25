@@ -72,6 +72,7 @@ body{background:var(--bg)}.sidebar{background:#fffdf9;overflow-y:auto;scrollbar-
 @media(max-width:650px){.bee-heading{width:54px;height:54px;flex-basis:54px;margin-left:3px}.page-heading{align-items:center;gap:5px}.hero.with-bee{padding-right:22px;padding-bottom:95px}.hero.with-bee .bee-hero{height:80px;width:80px;right:12px;bottom:4px}.mcq-feedback .bee-feedback{width:46px;height:46px}.mcq-result .bee-result{width:80px;height:80px}}
 @media(prefers-reduced-motion:reduce){.bee-heading,.bee-hero,.bee-feedback,.bee-result{animation:none!important}}
 
+.sfx-toggle{appearance:none;border:1px solid #ddcabb;background:#fff7ec;color:#4D6080;display:inline-flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap;border-radius:100px;padding:8px 11px;font-size:12px;line-height:1.1;font-family:inherit;font-weight:800;cursor:pointer;flex-shrink:0}.sfx-toggle:hover{background:#E9D9CA;border-color:#cba98e}.sfx-toggle:focus-visible{outline:3px solid #F4721E;outline-offset:2px}.sfx-toggle[aria-pressed="false"]{background:#f3f2f0;color:#797c85;border-color:#e4e2dd}@media(max-width:650px){.sfx-toggle{padding:8px;border-radius:50%;min-height:34px;min-width:34px}.sfx-label{display:none}}
 </style>
 </head>
 <body>
@@ -90,6 +91,44 @@ window.HSK_DATA={"meta":{"title":"HSK4 · Bài 12","source":"HSK4_Bai_12_Dich_Pi
 'use strict';
 const D=window.HSK_DATA;
 if(!D){document.getElementById('app').textContent='Không tải được dữ liệu bài học.';return;}
+
+// Small original feedback chimes, synthesized locally on answer clicks. No media downloads.
+const SFX=(()=>{
+ const KEY='hsk-classroom-sfx-enabled-v1';
+ let on=true,ctx=null;
+ try{on=localStorage.getItem(KEY)!=='off';}catch(_){}
+ function toggle(){on=!on;try{localStorage.setItem(KEY,on?'on':'off');}catch(_){}return on;}
+ function play(result){
+  if(!on)return;
+  try{
+   const Audio=window.AudioContext||window.webkitAudioContext;
+   if(!Audio)return;
+   if(!ctx)ctx=new Audio();
+   if(ctx.state==='suspended')ctx.resume().catch(()=>{});
+   const t=ctx.currentTime+.012;
+   function note(freq,delay,duration,volume,type='sine',endFreq=0){
+    const osc=ctx.createOscillator(),gain=ctx.createGain(),at=t+delay;
+    osc.type=type;osc.frequency.setValueAtTime(freq,at);
+    if(endFreq)osc.frequency.exponentialRampToValueAtTime(endFreq,at+duration*.85);
+    gain.gain.setValueAtTime(.0001,at);
+    gain.gain.exponentialRampToValueAtTime(volume,at+.018);
+    gain.gain.exponentialRampToValueAtTime(.0001,at+duration);
+    osc.connect(gain);gain.connect(ctx.destination);
+    osc.start(at);osc.stop(at+duration+.03);
+   }
+   if(result==='correct'||result==='right'){
+    note(523.25,0,.19,.047);
+    note(659.25,.085,.20,.045);
+    note(783.99,.18,.28,.052);
+   }else if(result==='wrong'){
+    note(365,0,.30,.041,'triangle',245);
+    note(235,.17,.28,.028,'sine',170);
+   }
+  }catch(_){/* Never stop study if audio is unavailable. */}
+ }
+ return {get enabled(){return on;},toggle,play};
+})();
+
 const STORAGE='hsk4-bai12-progress-v1';
 const today=()=>new Date().toISOString().slice(0,10);
 const ESC={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
@@ -116,7 +155,7 @@ const mainSections=[
 function metaProgress(){return {known:D.vocab.filter(v=>vstatus(v.id)==='known').length,review:D.vocab.filter(v=>vstatus(v.id)==='review').length,attempted:Object.keys(P.quiz).length,correct:Object.values(P.quiz).filter(v=>v.status==='correct').length,trans:Object.keys(P.translations).length};}
 function nav(){return `<div class="mobile-overlay ${U.mobile?'open':''}" data-act="mobileClose"></div><aside class="sidebar ${U.mobile?'open':''}">
 <div class="brand"><div class="brand-logo han">中</div><div><strong>HSK4 Classroom</strong><small>MY CHINESE JOURNEY</small></div></div><div class="course-switch"><a class="hub" href="/hsk4/">⌂ &nbsp; Tất cả bài học <span>↗</span></a><a href="/hsk4-bai11/">BÀI 11 <small>89 TRANG →</small></a><a class="current" href="/hsk4-bai12/">BÀI 12 <small>79 TRANG</small></a></div><div class="nav-caption">HỌC TẬP</div><nav class="nav">${mainSections.slice(0,6).map(([id,icon,label])=>`<button class="nav-btn ${U.tab===id?'active':''}" data-tab="${id}"><span class="nav-icon han">${icon}</span>${e(label)}</button>`).join('')}</nav><div class="nav-caption">THƯ VIỆN & DỮ LIỆU</div><nav class="nav">${mainSections.slice(6).map(([id,icon,label])=>`<button class="nav-btn ${U.tab===id?'active':''}" data-tab="${id}"><span class="nav-icon">${icon}</span>${e(label)}</button>`).join('')}</nav><div class="side-foot"><strong>Học từ tài liệu thật</strong><p>79 trang · ${D.meta.stats.coreVocab} từ chính · Không tự sinh đáp án. Tiến độ lưu trong trình duyệt này.</p><div class="progress-track" style="margin-top:12px"><div class="progress-bar teal" style="width:${Math.round(metaProgress().known/D.vocab.length*100)}%"></div></div></div></aside>`}
-function shell(body){const l=mainSections.find(x=>x[0]===U.tab)?.[2]||'Tổng quan';return `<div class="workspace">${nav()}<main class="main"><header class="topbar"><div style="display:flex;align-items:center"><button class="mobile-menu" aria-label="Mở menu" data-act="mobile">☰</button><span class="breadcrumb">Lớp học / <b>${e(l)}</b></span></div><div class="topright"><span class="date-pill">BÀI 12 · HSK4</span><span class="avatar han">中</span></div></header><div class="content">${body}<div class="footer">Nguồn học: ${e(D.meta.source)} · 79 trang. Các thẻ và đáp án có số trang để đối chiếu. Phần trắc nghiệm và tiêu chí chấm được xây dựng phục vụ luyện tập, không thay thế giáo viên.</div></div></main></div>`}
+function shell(body){const l=mainSections.find(x=>x[0]===U.tab)?.[2]||'Tổng quan';return `<div class="workspace">${nav()}<main class="main"><header class="topbar"><div style="display:flex;align-items:center"><button class="mobile-menu" aria-label="Mở menu" data-act="mobile">☰</button><span class="breadcrumb">Lớp học / <b>${e(l)}</b></span></div><div class="topright"><button type="button" class="sfx-toggle" data-act="soundToggle" aria-label="${SFX.enabled?'Tắt':'Bật'} âm thanh đáp án" aria-pressed="${SFX.enabled}"><span aria-hidden="true">${SFX.enabled?'🔊':'🔇'}</span><span class="sfx-label">${SFX.enabled?'Âm bật':'Âm tắt'}</span></button><span class="date-pill">BÀI 12 · HSK4</span><span class="avatar han">中</span></div></header><div class="content">${body}<div class="footer">Nguồn học: ${e(D.meta.source)} · 79 trang. Các thẻ và đáp án có số trang để đối chiếu. Phần trắc nghiệm và tiêu chí chấm được xây dựng phục vụ luyện tập, không thay thế giáo viên.</div></div></main></div>`}
 function heading(kicker,title,desc,extra=''){const mood=U.tab==='vocab'?'wink':U.tab==='cards'?(U.memoryMode==='choice'?'surprised':'wink'):U.tab==='grammar'?'thinking':U.tab==='reading'?'thinking':U.tab==='quiz'?(U.quizResult==='wrong'?'sad':'serious'):U.tab==='pages'?'surprised':U.tab==='audit'?'serious':'happy';return `<div class="page-heading"><div><div class="eyebrow">${e(kicker)}</div><h1>${e(title)}</h1><p>${desc}</p></div>${extra}<img class="bee-heading" src="/hsk4/assets/bee-${mood}.png" alt="Ong học tập" width="82" height="82" decoding="async" loading="lazy"></div>`}
 function stat(label,value,desc,ico){return `<div class="stat"><div class="stat-label">${e(label)}</div><div class="stat-value"><span class="ico">${ico}</span>${value}</div><div class="stat-desc">${e(desc)}</div></div>`}
 function home(){const m=metaProgress();const prog=Math.round(m.known/D.vocab.length*100);return `<section class="hero with-bee"><img class="bee-hero" src="/hsk4/assets/bee-happy.png" width="147" height="147" loading="lazy" decoding="async" alt="Ong vui vẻ chào đón"><div class="ornament han">学</div><div><small>第十二课 · BÀI HỌC THỨ MƯỜI HAI</small><h2>Bài 12: Từng bước<br>hiểu câu chữ 把.</h2><p>Học chậm mà chắc: ghi nhớ chữ Hán, luyện ngữ pháp, tự làm bài và xem lời giải được trích từ tài liệu. Mọi mục đều có thể lần về trang gốc.</p><div class="hero-btns"><button class="btn primary" data-tab="cards">Ôn từ với Flashcard ↗</button><button class="btn ghost" data-tab="quiz">Làm bài tập →</button></div></div></section>
@@ -216,7 +255,7 @@ function memoryChoose(selectedId){
  if(U.mcqFinished)return;
  const id=U.mcqOrder[U.mcqIndex],v=D.vocab.find(x=>x.id===id);
  if(!v||U.mcqAnswered[id]||!memoryOptions(v).some(x=>x.id===selectedId))return;
- const good=selectedId===id,prev=P.memory[id]||{};
+ const good=selectedId===id,prev=P.memory[id]||{};SFX.play(good?'correct':'wrong');
  U.mcqAnswered[id]={selected:selectedId,correct:good};
  P.memory[id]={attempts:(prev.attempts||0)+1,correct:(prev.correct||0)+(good?1:0),wrong:(prev.wrong||0)+(good?0:1),lastCorrect:good,lastAt:new Date().toISOString()};
  P.vocab[id]={...(P.vocab[id]||{}),status:good?'known':'review',lastReviewed:new Date().toISOString()};
@@ -328,14 +367,14 @@ function quizCheck(reveal){const arr=quizList();const x=arr[U.quizIndex];if(!x)r
  const manual=U.quizMode==='translation'||['open','answer'].includes(x.type);
  if(manual||reveal){U.quizResult='manual';render();return}
  if(!val.trim()){message('Bạn hãy nhập câu trả lời hoặc chọn “Hiện đáp án”.');return}
- const good=norm(val)===norm(x.answer)||(x.fillAnswer&&norm(val)===norm(x.fillAnswer));U.quizResult=good?'right':'wrong';if(good){const ob=P.quiz;ob[x.id]={status:'correct',lastAttempt:new Date().toISOString(),attempts:(ob[x.id]?.attempts||0)+1};tracked()}else{P.quiz[x.id]={status:'review',lastAttempt:new Date().toISOString(),attempts:(P.quiz[x.id]?.attempts||0)+1};tracked()}render();}
+ const good=norm(val)===norm(x.answer)||(x.fillAnswer&&norm(val)===norm(x.fillAnswer));U.quizResult=good?'right':'wrong';SFX.play(good?'correct':'wrong');if(good){const ob=P.quiz;ob[x.id]={status:'correct',lastAttempt:new Date().toISOString(),attempts:(ob[x.id]?.attempts||0)+1};tracked()}else{P.quiz[x.id]={status:'review',lastAttempt:new Date().toISOString(),attempts:(P.quiz[x.id]?.attempts||0)+1};tracked()}render();}
 async function importData(){const input=document.getElementById('progressFile');if(!input?.files?.length){message('Hãy chọn tệp JSON trước.');return}try{let raw=JSON.parse(await input.files[0].text());if(raw?.app!=='HSK4_BAI12'||!raw.progress||typeof raw.progress!=='object'||Array.isArray(raw.progress))throw Error('Không đúng tệp tiến độ HSK4 Bài 12.');
  const data=raw.progress;for(const k of ['vocab','quiz','translations','activity']){if(!data[k]||typeof data[k]!=='object'||Array.isArray(data[k]))throw Error('Tệp thiếu phần '+k)}
  if(!confirm('Nhập tệp này sẽ thay thế tiến độ đã lưu trên trình duyệt. Tiếp tục?'))return;
  P={...load(),vocab:data.vocab,quiz:data.quiz,translations:data.translations,activity:data.activity,memory:data.memory&&typeof data.memory==='object'?data.memory:{},grammar:data.grammar&&typeof data.grammar==='object'?data.grammar:{},preferences:data.preferences||{}};persist();U.importMessage='Đã nhập tiến độ.';message('Khôi phục tiến độ thành công.');render();}catch(err){message('Không thể nhập: '+err.message)}}
 function exportData(){const payload=JSON.stringify({app:'HSK4_BAI12',version:1,exportedAt:new Date().toISOString(),progress:P},null,2);const blob=new Blob([payload],{type:'application/json'});const link=document.createElement('a');const url=URL.createObjectURL(blob);link.href=url;link.download='HSK4_Bai12_TienDo_'+today()+'.json';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);message('Đã tạo file xuất tiến độ.');}
 function shuffle(){const arr=cardDeck();const ids=arr.map(x=>x.id);for(let i=ids.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[ids[i],ids[j]]=[ids[j],ids[i]];}U.cardOrder=ids;U.cardShuffle=true;U.cardIndex=0;U.cardFlipped=false;render();message('Đã trộn thứ tự thẻ.');}
-const acts={nextUnit(){setUnit(Math.min(3,U.unit+1),false)},memoryRestart(){memoryPrepare();render()},memoryNext(){memoryNext()},mobile(){U.mobile=!U.mobile;render()},mobileClose(){U.mobile=false;render()},vocabPrev(){U.vocabPage=Math.max(0,U.vocabPage-1);render()},vocabNext(){U.vocabPage++;render()},shuffle,flip(){U.cardFlipped=!U.cardFlipped;render()},cardPrev(){advanceCards(-1)},cardNext(){advanceCards(1)},quizPrev(){advanceQuiz(-1)},quizNext(){advanceQuiz(1)},quizPy(){U.quizShowPy=!U.quizShowPy;render()},quizVi(){U.quizShowVi=!U.quizShowVi;render()},quizClear(){U.quizDraft='';U.quizResult=null;render()},quizReveal(){quizCheck(true)},quizCheck(){quizCheck(false)},readerPy(){U.readerPy=!U.readerPy;render()},readerVi(){U.readerVi=!U.readerVi;render()},readerAnswers(){U.readerAnswers=!U.readerAnswers;render()},pageRaw(){U.pageRaw=!U.pageRaw;render()},pagePy(){U.pagePy=!U.pagePy;render()},pageVi(){U.pageVi=!U.pageVi;render()},pagePrev(){gotoPage(U.page-1)},pageNext(){gotoPage(U.page+1)},gotoPage(){gotoPage(document.getElementById('gotoPage')?.value)},export:exportData,import:importData};
+const acts={soundToggle(){SFX.toggle();render()},nextUnit(){setUnit(Math.min(3,U.unit+1),false)},memoryRestart(){memoryPrepare();render()},memoryNext(){memoryNext()},mobile(){U.mobile=!U.mobile;render()},mobileClose(){U.mobile=false;render()},vocabPrev(){U.vocabPage=Math.max(0,U.vocabPage-1);render()},vocabNext(){U.vocabPage++;render()},shuffle,flip(){U.cardFlipped=!U.cardFlipped;render()},cardPrev(){advanceCards(-1)},cardNext(){advanceCards(1)},quizPrev(){advanceQuiz(-1)},quizNext(){advanceQuiz(1)},quizPy(){U.quizShowPy=!U.quizShowPy;render()},quizVi(){U.quizShowVi=!U.quizShowVi;render()},quizClear(){U.quizDraft='';U.quizResult=null;render()},quizReveal(){quizCheck(true)},quizCheck(){quizCheck(false)},readerPy(){U.readerPy=!U.readerPy;render()},readerVi(){U.readerVi=!U.readerVi;render()},readerAnswers(){U.readerAnswers=!U.readerAnswers;render()},pageRaw(){U.pageRaw=!U.pageRaw;render()},pagePy(){U.pagePy=!U.pagePy;render()},pageVi(){U.pageVi=!U.pageVi;render()},pagePrev(){gotoPage(U.page-1)},pageNext(){gotoPage(U.page+1)},gotoPage(){gotoPage(document.getElementById('gotoPage')?.value)},export:exportData,import:importData};
 document.addEventListener('click',ev=>{const hit=ev.target.closest('[data-act],[data-tab],[data-page],[data-vfilter],[data-vocab],[data-cfilter],[data-grammar],[data-qfilter],[data-qmode],[data-qsave],[data-speak],[data-mmode],[data-mfilter],[data-mchoice],[data-unit-learn],[data-unit-test],[data-gstate]');if(!hit)return;
  if(hit.dataset.unitLearn!==undefined){setUnit(Number(hit.dataset.unitLearn),false);return}
  if(hit.dataset.unitTest!==undefined){setUnit(Number(hit.dataset.unitTest),true);return}
