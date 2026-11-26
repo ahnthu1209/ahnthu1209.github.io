@@ -73,6 +73,7 @@ body{background:var(--bg)}.sidebar{background:#fffdf9;overflow-y:auto;scrollbar-
 @media(prefers-reduced-motion:reduce){.bee-heading,.bee-hero,.bee-feedback,.bee-result{animation:none!important}}
 
 .sfx-toggle{appearance:none;border:1px solid #ddcabb;background:#fff7ec;color:#4D6080;display:inline-flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap;border-radius:100px;padding:8px 11px;font-size:12px;line-height:1.1;font-family:inherit;font-weight:800;cursor:pointer;flex-shrink:0}.sfx-toggle:hover{background:#E9D9CA;border-color:#cba98e}.sfx-toggle:focus-visible{outline:3px solid #F4721E;outline-offset:2px}.sfx-toggle[aria-pressed="false"]{background:#f3f2f0;color:#797c85;border-color:#e4e2dd}@media(max-width:650px){.sfx-toggle{padding:8px;border-radius:50%;min-height:34px;min-width:34px}.sfx-label{display:none}}
+.hanzi-game{max-width:820px;margin:auto}.hanzi-card{border-radius:22px;overflow:hidden;background:#fffdfa;border:1px solid #e6d5c5}.hanzi-head{padding:28px 18px;text-align:center;background:#f3e7dc}.hanzi-meaning{font-size:clamp(26px,4vw,42px);font-weight:850;color:#4D6080;line-height:1.4;margin:12px 0}.hanzi-form-area{padding:23px}.hanzi-input{width:100%;font-size:clamp(23px,3vw,33px);text-align:center;font-weight:750;padding:18px;border:2px solid #ddc7b5;border-radius:14px;background:white;color:#34486b;outline:none}.hanzi-input:focus{border-color:#F4721E}.hanzi-submit{width:100%;margin-top:13px}.hanzi-feedback{margin-top:14px;padding:16px;background:#eaf9f0;color:#1b694a;border-radius:14px;line-height:1.7;font-size:13px}.hanzi-feedback.wrong{background:#fff0e5;color:#944a2c}.hanzi-feedback img{float:right;width:54px;height:54px;object-fit:contain}.hanzi-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:17px}.hanzi-stage{display:block;font-size:11px;font-weight:800;color:#a65b23;margin-top:7px}@media(max-width:650px){.memory-mode-bar{display:grid;grid-template-columns:repeat(3,1fr)}.memory-mode-bar button{font-size:11px;min-width:0;padding:10px 4px;white-space:normal}.hanzi-form-area{padding:16px}.hanzi-foot{flex-direction:column}.hanzi-foot .btn{width:100%}}
 </style>
 </head>
 <body>
@@ -138,21 +139,22 @@ const norm=(s)=>String(s||'').normalize('NFKC').toLowerCase().replace(/[\s\u3000
 const normSearch=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 function load(){try{const obj=JSON.parse(localStorage.getItem(STORAGE)||'{}');return {...{vocab:{},quiz:{},translations:{},activity:{},memory:{},grammar:{},studySessions:{},studyHistory:{},studyView:{},preferences:{},version:1},...obj};}catch(_){return {vocab:{},quiz:{},translations:{},activity:{},memory:{},grammar:{},studySessions:{},studyHistory:{},studyView:{},preferences:{},version:1};}}
 let P=load();
-let U={tab:'home',mobile:false,search:'',vocabFilter:'all',vocabPage:0,cardFilter:'unit',unit:0,cardIndex:0,cardFlipped:false,cardShuffle:false,memoryMode:'flashcard',mcqFilter:'unit',mcqOrder:[],mcqIndex:0,mcqOptions:{},mcqAnswered:{},mcqFinished:false,cardOrder:[],quizFilter:'all',quizMode:'source',quizIndex:0,quizDraft:'',quizResult:null,quizShowPy:false,quizShowVi:false,readerGroup:'reading1',readerPy:true,readerVi:true,readerAnswers:false,grammarTab:0,page:1,pageRaw:false,pagePy:true,pageVi:true,sourceRange:'all',sourceSearch:'',importMessage:''};
+let U={tab:'home',mobile:false,search:'',vocabFilter:'all',vocabPage:0,cardFilter:'unit',unit:0,cardIndex:0,cardFlipped:false,cardShuffle:false,memoryMode:'flashcard',mcqFilter:'unit',hzDraft:'',mcqOrder:[],mcqIndex:0,mcqOptions:{},mcqAnswered:{},mcqFinished:false,cardOrder:[],quizFilter:'all',quizMode:'source',quizIndex:0,quizDraft:'',quizResult:null,quizShowPy:false,quizShowVi:false,readerGroup:'reading1',readerPy:true,readerVi:true,readerAnswers:false,grammarTab:0,page:1,pageRaw:false,pagePy:true,pageVi:true,sourceRange:'all',sourceSearch:'',importMessage:''};
 
 // hsk4-save-rounds-v2: keep the quiz, last score and place when the browser reopens.
 const savedView=P.studyView&&typeof P.studyView==='object'?P.studyView:{};
 for(const key of ['tab','memoryMode','mcqFilter','cardFilter','quizMode','quizFilter'])if(typeof savedView[key]==='string')U[key]=savedView[key];
 for(const key of ['unit','cardIndex','quizIndex','grammarTab'])if(Number.isInteger(savedView[key])&&savedView[key]>=0)U[key]=savedView[key];
 if(U.unit>3)U.unit=0;
-if(!['flashcard','choice'].includes(U.memoryMode))U.memoryMode='flashcard';
+if(!['flashcard','choice','hanzi'].includes(U.memoryMode))U.memoryMode='flashcard';
 if(!['home','vocab','cards','grammar','reading','quiz','pages','audit','backup'].includes(U.tab))U.tab='home';
 if(typeof savedView.quizDraft==='string')U.quizDraft=savedView.quizDraft;
 if(['right','wrong','manual'].includes(savedView.quizResult))U.quizResult=savedView.quizResult;
 if(!P.studySessions||typeof P.studySessions!=='object')P.studySessions={};
+if(!P.hzMemory||typeof P.hzMemory!=='object')P.hzMemory={};
 if(!P.studyHistory||typeof P.studyHistory!=='object')P.studyHistory={};
-function memorySessionKey(){return U.mcqFilter==='unit'?'unit:'+U.unit:'filter:'+U.mcqFilter;}
-function clearMemorySession(){U.mcqOrder=[];U.mcqIndex=0;U.mcqOptions={};U.mcqAnswered={};U.mcqFinished=false;}
+function memorySessionKey(){return (U.memoryMode==='hanzi'?'hanzi:':'')+(U.mcqFilter==='unit'?'unit:'+U.unit:'filter:'+U.mcqFilter);}
+function clearMemorySession(){U.mcqOrder=[];U.mcqIndex=0;U.mcqOptions={};U.mcqAnswered={};U.mcqFinished=false;U.hzDraft='';}
 function restoreMemorySession(){
  const state=P.studySessions[memorySessionKey()],ids=new Set(D.vocab.map(x=>x.id));
  if(!state||!Array.isArray(state.order)||!state.order.length||state.order.some(id=>!ids.has(id))){clearMemorySession();return false;}
@@ -160,11 +162,11 @@ function restoreMemorySession(){
  U.mcqIndex=Number.isInteger(state.index)?Math.max(0,Math.min(U.mcqOrder.length-1,state.index)):0;
  U.mcqOptions=state.options&&typeof state.options==='object'?state.options:{};
  U.mcqAnswered=state.answered&&typeof state.answered==='object'?state.answered:{};
- U.mcqFinished=!!state.finished;return true;
+ U.mcqFinished=!!state.finished;U.hzDraft=typeof state.draft==='string'?state.draft:'';return true;
 }
 function saveMemorySession(){
  if(!Array.isArray(U.mcqOrder)||!U.mcqOrder.length)return;
- P.studySessions[memorySessionKey()]={order:[...U.mcqOrder],index:U.mcqIndex,options:U.mcqOptions,answered:U.mcqAnswered,finished:U.mcqFinished,savedAt:new Date().toISOString()};
+ P.studySessions[memorySessionKey()]={order:[...U.mcqOrder],index:U.mcqIndex,options:U.mcqOptions,answered:U.mcqAnswered,finished:U.mcqFinished,draft:U.hzDraft,savedAt:new Date().toISOString()};
  persist();
 }
 function latestRound(unit){return P.studyHistory['unit:'+unit]||null;}
@@ -230,12 +232,12 @@ function skillMeters(){
 }
 function unitSelector(){
  let s='<div class="stage-heading"><strong>Học từ vựng theo 4 chặng</strong><span>Mỗi lượt kiểm tra 10 từ, bao phủ toàn chặng theo tiến độ</span></div><div class="unit-grid">';
- for(let i=0;i<4;i++){const x=wordStats(fourUnits(i));s+='<div class="unit '+(U.unit===i?'selected':'')+'"><div class="unit-name">CHẶNG '+(i+1)+'<small>'+x.total+' từ</small></div><div class="unit-info">'+x.known+' đã đánh dấu thuộc<br><b>'+x.correct+'/'+x.total+' kiểm tra đúng · '+x.pct+'%</b>'+(unitSessionLabel(i)?'<br><strong class="saved-round">'+unitSessionLabel(i)+'</strong>':'')+'</div><div class="progress-track"><div class="progress-bar" style="width:'+x.pct+'%"></div></div><div class="unit-controls"><button data-unit-learn="'+i+'">▣ Học Flashcard</button><button class="secondary" data-unit-test="'+i+'">✎ Kiểm tra 10 câu</button></div></div>';}
+ for(let i=0;i<4;i++){const x=wordStats(fourUnits(i));s+='<div class="unit '+(U.unit===i?'selected':'')+'"><div class="unit-name">CHẶNG '+(i+1)+'<small>'+x.total+' từ</small></div><div class="unit-info">'+x.known+' đã đánh dấu thuộc<br><b>'+x.correct+'/'+x.total+' kiểm tra đúng · '+x.pct+'%</b>'+(unitSessionLabel(i)?'<br><strong class="saved-round">'+unitSessionLabel(i)+'</strong>':'')+'</div>'+(hzStage(i)?'<small class="hanzi-stage">'+hzStage(i)+'</small>':'')+'<div class="progress-track"><div class="progress-bar" style="width:'+x.pct+'%"></div></div><div class="unit-controls"><button data-unit-learn="'+i+'">▣ Học Flashcard</button><button class="secondary" data-unit-test="'+i+'">✎ Kiểm tra 10 câu</button><button class="secondary" data-unit-hanzi="'+i+'">✍ Gõ chữ Hán</button></div></div>';}
  return s+'</div><div class="unit-note">Từ vựng tính % theo lần chọn nghĩa <b>gần nhất</b>; sai sẽ quay lại danh sách “Từ khó”. Từ vựng vẫn giữ đúng thứ tự của tài liệu trong từng chặng.</div>';
 }
 function setUnit(i,test){
  if(!Number.isInteger(i)||i<0||i>3)return;
- U.unit=i;U.cardFilter='unit';U.mcqFilter='unit';U.memoryMode=test?'choice':'flashcard';
+ U.unit=i;U.cardFilter='unit';U.mcqFilter='unit';U.memoryMode=test==='hanzi'?'hanzi':test?'choice':'flashcard';
  U.cardIndex=0;U.cardFlipped=false;U.cardShuffle=false;U.cardOrder=[];
  if(!restoreMemorySession()&&test)memoryPrepare();render();
 }
@@ -253,8 +255,9 @@ function cardDeck(){let deck=D.vocab.filter(v=>U.cardFilter==='all'||(U.cardFilt
 /* 4-choice meaning practice: all choices are sourced from THIS lesson's vocab. */
 function memoryModeBar(){
  return '<div class="memory-mode-bar" role="group" aria-label="Chế độ ghi nhớ">'
- +'<button type="button" data-mmode="flashcard" class="'+(U.memoryMode==='choice'?'':'active')+'" aria-pressed="'+(U.memoryMode!=='choice')+'">▣ &nbsp; Lật thẻ Flashcard</button>'
- +'<button type="button" data-mmode="choice" class="'+(U.memoryMode==='choice'?'active':'')+'" aria-pressed="'+(U.memoryMode==='choice')+'">◫ &nbsp; 4 ô chọn nghĩa</button></div>';
+ +'<button type="button" data-mmode="flashcard" class="'+(U.memoryMode==='flashcard'?'active':'')+'" aria-pressed="'+(U.memoryMode==='flashcard')+'">▣ Flashcard</button>'
+ +'<button type="button" data-mmode="choice" class="'+(U.memoryMode==='choice'?'active':'')+'" aria-pressed="'+(U.memoryMode==='choice')+'">◫ 4 ô chọn nghĩa</button>'
+ +'<button type="button" data-mmode="hanzi" class="'+(U.memoryMode==='hanzi'?'active':'')+'" aria-pressed="'+(U.memoryMode==='hanzi')+'">✍ Gõ chữ Hán</button></div>';
 }
 function memoryBank(){
  return D.vocab.filter(v=>v.cn&&v.vi&&(
@@ -267,9 +270,9 @@ function memoryBank(){
 }
 function memoryShuffle(array){for(let i=array.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[array[i],array[j]]=[array[j],array[i]];}return array;}
 function memoryPrepare(){
- const d=memoryBank(),remaining=memoryShuffle(d.filter(x=>!isWordVerified(x.id))),passed=memoryShuffle(d.filter(x=>isWordVerified(x.id)));
+ const d=U.memoryMode==='hanzi'?memoryBank().filter(x=>/^[\p{Script=Han}]+$/u.test(x.cn)):memoryBank();const verified=x=>U.memoryMode==='hanzi'?P.hzMemory[x.id]?.lastCorrect===true:isWordVerified(x.id);const remaining=memoryShuffle(d.filter(x=>!verified(x))),passed=memoryShuffle(d.filter(x=>verified(x)));
  U.mcqOrder=[...remaining,...passed].slice(0,10).map(x=>x.id);
- U.mcqIndex=0;U.mcqOptions={};U.mcqAnswered={};U.mcqFinished=false;
+ U.mcqIndex=0;U.mcqOptions={};U.mcqAnswered={};U.mcqFinished=false;U.hzDraft='';
  saveMemorySession();
 }
 function memoryNorm(x){return normSearch(x).replace(/[^a-z0-9\u00c0-\u1eff]+/gi,' ').trim();}
@@ -315,6 +318,33 @@ function memoryNext(){
  }else{U.mcqIndex++;}
  saveMemorySession();render();
 }
+
+// HSK4 Vietnamese → Chinese recall: an answer counts only when the learner enters matching Hanzi.
+function hzNorm(x){return String(x||'').normalize('NFKC').replace(/[\s\u3000，,。.!?？！、;；:：“”"'‘’（）()【】\[\]{}〈〉《》·]/g,'');}
+function hzStage(i){const h=P.studyHistory['hanzi:unit:'+i],q=P.studySessions['hanzi:unit:'+i];return (h?'Gõ Hán: '+h.correct+'/'+h.total+' đúng':'')+(q&&!q.finished?' · đang làm '+Object.keys(q.answered||{}).length+'/'+q.order.length:'');}
+function hzCheck(){
+ const id=U.mcqOrder[U.mcqIndex],v=D.vocab.find(x=>x.id===id);
+ if(U.mcqFinished||!v||U.mcqAnswered[id])return;
+ const raw=String(document.getElementById('hzInput')?.value??U.hzDraft??'').trim(),value=hzNorm(raw);
+ if(!value){message('Bạn cần nhập chữ Hán trước khi chấm.');return;}
+ if(!/^[\p{Script=Han}]+$/u.test(value)){message('Chỉ nhập chữ Hán, không chấp nhận pinyin.');return;}
+ const good=value===hzNorm(v.cn),p=P.hzMemory[id]||{};
+ U.mcqAnswered[id]={correct:good,typed:raw};U.hzDraft=raw;
+ P.hzMemory[id]={attempts:(p.attempts||0)+1,correct:(p.correct||0)+(good?1:0),wrong:(p.wrong||0)+(good?0:1),lastCorrect:good,lastAt:new Date().toISOString()};
+ P.vocab[id]={...(P.vocab[id]||{}),status:good?'known':'review',lastReviewed:new Date().toISOString()};
+ SFX.play(good?'correct':'wrong');saveMemorySession();tracked();render();
+}
+function hzBody(){
+ const id=U.mcqOrder[U.mcqIndex],v=D.vocab.find(x=>x.id===id),ans=U.mcqAnswered[id],right=Object.values(U.mcqAnswered).filter(x=>x.correct).length;
+ return '<div class="hanzi-game"><div class="mcq-topline">CÂU '+(U.mcqIndex+1)+' / '+U.mcqOrder.length+' · ✓ '+right+' đúng</div>'
+ +'<div class="hanzi-card"><div class="hanzi-head"><span class="pill core">TIẾNG VIỆT · TRANG '+pad(v.page)+'</span><div class="hanzi-meaning">'+e(v.vi)+'</div><small>Hãy gõ đủ '+[...v.cn].length+' chữ Hán</small></div>'
+ +'<div class="hanzi-form-area"><form id="hzForm"><label for="hzInput">Nhập từ tiếng Trung:</label>'
+ +'<input id="hzInput" class="hanzi-input" type="text" lang="zh-CN" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Gõ chữ Hán..." value="'+attr(U.hzDraft||'')+'" '+(ans?'disabled':'required')+'>'
+ +(!ans?'<button class="btn primary hanzi-submit" type="submit">✓ Kiểm tra chữ Hán</button>':'')+'</form>'
+ +(ans?'<div class="hanzi-feedback '+(ans.correct?'':'wrong')+'"><img src="/hsk4/assets/bee-'+(ans.correct?'wink':'sad')+'.png" alt="Ong phản hồi"><b>'+(ans.correct?'✓ Chính xác, bạn đã tự gõ đúng!':'↺ Chưa đúng · cần ôn lại')+'</b><br>Đã nhập: <b>'+e(ans.typed)+'</b><br>Đáp án nguồn: <b>'+e(v.cn)+'</b> · '+e(v.py)+'<br>'+e(v.vi)+'<br><small>Trang '+pad(v.page)+'</small></div>':'')
+ +'<div class="hanzi-foot"><span class="mini-note">'+(ans?'Câu này đã được chấm.':'Nhấn Enter để chấm · không dùng pinyin')+'</span><button class="btn primary" data-act="memoryNext" '+(ans?'':'disabled')+'>'+(U.mcqIndex===U.mcqOrder.length-1?'Xem kết quả →':'Câu tiếp →')+'</button></div></div></div></div>';
+}
+
 function memoryGame(){
  if(!U.mcqOrder.length)memoryPrepare();
  const done=Object.values(U.mcqAnswered),right=done.filter(x=>x.correct).length,bank=memoryBank();
@@ -326,10 +356,10 @@ function memoryGame(){
   body='<div class="mcq-result"><h2>Chưa có từ để luyện</h2><p>Hãy chọn “Toàn bộ”, hoặc vào Flashcard đánh dấu “Chưa nhớ” để tạo bộ từ khó.</p><button class="btn primary" data-mfilter="all">Học toàn bộ từ →</button></div>';
  }else if(U.mcqFinished){
   const accuracy=Math.round(right/U.mcqOrder.length*100);
-  body='<div class="mcq-result"><img class="bee-result" width="100" height="100" loading="lazy" src="/hsk4/assets/bee-'+(accuracy===100?'happy':'wink')+'.png" alt="Ong chúc mừng"><span class="pill core">HOÀN THÀNH LƯỢT ÔN</span><div class="bigscore">'+right+' / '+U.mcqOrder.length+'</div><h2>'+ (accuracy===100?'Tuyệt vời! Bạn nhớ rất tốt.':'Đã hoàn thành một lượt ghi nhớ!')+'</h2><p class="saved-round">✓ Kết quả lượt này đã được lưu, mở lại vẫn xem được.</p>'
-  +'<p>Đúng '+right+' câu, sai '+(U.mcqOrder.length-right)+' câu. Chặng '+(U.unit+1)+' đã kiểm tra đúng '+wordStats(fourUnits(U.unit)).correct+'/'+fourUnits(U.unit).length+' từ. Từ sai đã đưa vào “Từ khó”.</p>'
+  body='<div class="mcq-result"><img class="bee-result" width="100" height="100" loading="lazy" src="/hsk4/assets/bee-'+(accuracy===100?'happy':'wink')+'.png" alt="Ong chúc mừng"><span class="pill core">HOÀN THÀNH LƯỢT ÔN</span><div class="bigscore">'+right+' / '+U.mcqOrder.length+'</div><h2>'+ (U.memoryMode==='hanzi'?'Đã hoàn thành bài gõ chữ Hán!':accuracy===100?'Tuyệt vời! Bạn nhớ rất tốt.':'Đã hoàn thành một lượt ghi nhớ!')+'</h2><p class="saved-round">✓ Kết quả lượt này đã được lưu, mở lại vẫn xem được.</p>'
+  +'<p>Đúng '+right+' câu, sai '+(U.mcqOrder.length-right)+' câu.'+(U.memoryMode==='hanzi'?' Điểm gõ chữ Hán của lượt này đã được lưu riêng.':' Chặng '+(U.unit+1)+' đã kiểm tra đúng '+wordStats(fourUnits(U.unit)).correct+'/'+fourUnits(U.unit).length+' từ.')+' Từ sai đã đưa vào “Từ khó”.</p>'
   +'<div class="mcq-actions"><button class="btn primary" data-act="memoryRestart">Kiểm tra 10 từ tiếp ↗</button><button class="btn outline" data-mfilter="review">Ôn từ khó ↺</button>'+(U.unit<3?'<button class="btn outline" data-act="nextUnit">Học chặng tiếp →</button>':'')+'</div></div>';
- }else{
+ }else if(U.memoryMode==='hanzi'){body=hzBody();}else{
   const id=U.mcqOrder[U.mcqIndex],v=D.vocab.find(x=>x.id===id),opts=memoryOptions(v),saved=U.mcqAnswered[id];
   body='<div class="mcq-panel"><div class="mcq-topline"><span>CÂU '+(U.mcqIndex+1)+' / '+U.mcqOrder.length+'</span><span>✓ '+right+' đúng · '+done.length+' đã trả lời</span></div>'
    +'<div class="progress-track" style="margin-bottom:18px"><div class="progress-bar" style="width:'+(done.length/U.mcqOrder.length*100)+'%"></div></div>'
@@ -349,12 +379,12 @@ function memoryGame(){
    body+='</div></div><div class="mcq-bottom"><span class="mcq-mini">'+(saved?'Bấm “Câu tiếp theo” hoặc phím Enter.':'Chọn 1 ô hoặc nhấn phím 1, 2, 3, 4.')+'</span>'
     +'<button class="btn primary" data-act="memoryNext" '+(saved?'':'disabled')+'>'+(U.mcqIndex===U.mcqOrder.length-1?'Xem kết quả →':'Câu tiếp theo →')+'</button></div></div>';
  }
- const lifetime=Object.values(P.memory||{}),attempts=lifetime.reduce((s,x)=>s+(x.attempts||0),0),correct=lifetime.reduce((s,x)=>s+(x.correct||0),0);
- return heading('02 · GHI NHỚ','Chọn nghĩa đúng trong 4 ô','Nhìn chữ Hán, chọn 1 nghĩa tiếng Việt đúng. Các đáp án đều lấy từ từ vựng của chính bài đang học.')+unitSelector()+memoryModeBar()+controls+body
- +'<div class="mcq-note">✦ Mỗi lượt tối đa 10 từ trong bộ '+e(U.mcqFilter==='review'?'Từ khó':'đã chọn')+'. Đã luyện '+lifetime.length+' từ, trả lời đúng '+correct+' / '+attempts+' lượt lựa chọn. Trả lời sai sẽ tự đưa từ vào danh sách ôn lại. Kết quả lưu riêng cho từng bài trên trình duyệt.</div>';
+ const lifetime=Object.values(U.memoryMode==='hanzi'?(P.hzMemory||{}):(P.memory||{})),attempts=lifetime.reduce((s,x)=>s+(x.attempts||0),0),correct=lifetime.reduce((s,x)=>s+(x.correct||0),0);
+ return heading('02 · GHI NHỚ',U.memoryMode==='hanzi'?'Nhìn tiếng Việt, gõ chữ Hán':'Chọn nghĩa đúng trong 4 ô',U.memoryMode==='hanzi'?'Bạn phải tự nhập chữ Hán trùng từ nguồn; pinyin không được tính đúng.':'Chọn 1 nghĩa tiếng Việt đúng của chữ Hán.')+unitSelector()+memoryModeBar()+controls+body
+ +'<div class="mcq-note">✦ Mỗi lượt tối đa 10 từ. Đã luyện '+lifetime.length+' từ, đúng '+correct+' / '+attempts+' '+(U.memoryMode==='hanzi'?'lượt nhập chữ Hán':'lượt lựa chọn')+'. Trả lời sai được đưa vào danh sách từ khó. Kết quả lưu riêng trên trình duyệt.</div>'+(U.memoryMode==='hanzi'&&bank.filter(v=>!/^[\p{Script=Han}]+$/u.test(v.cn)).length?'<div class="hanzi-warning">Các mẫu cấu trúc chứa dấu chỗ trống vẫn ở Flashcard, không chấm bằng bài gõ vì không phải từ hoàn chỉnh.</div>':'');
 }
 
-function cards(){if(U.memoryMode==='choice')return memoryGame();const deck=cardDeck();const v=deck[U.cardIndex];return heading('02 · NHỚ LÂU','Flashcard thông minh','Nhìn chữ Hán trước, đoán nghĩa, sau đó lật thẻ để tự kiểm tra. Tiến độ sẽ được lưu tự động.')+unitSelector()+memoryModeBar()+`<div class="toolbar"><div class="chips">${[['unit','Chặng đang học'],['all','Toàn bộ'],['core','41 từ chính'],['extra','14 từ bổ sung'],['phrases','Cụm từ'],['review','Từ khó'],['new','Chưa thuộc']].map(([id,x])=>`<button class="chip ${U.cardFilter===id?'active':''}" data-cfilter="${id}">${e(x)}</button>`).join('')}</div><div style="margin-left:auto"><button class="btn small outline" data-act="shuffle">⇄ Trộn thẻ</button></div></div>
+function cards(){if(U.memoryMode==='choice'||U.memoryMode==='hanzi')return memoryGame();const deck=cardDeck();const v=deck[U.cardIndex];return heading('02 · NHỚ LÂU','Flashcard thông minh','Nhìn chữ Hán trước, đoán nghĩa, sau đó lật thẻ để tự kiểm tra. Tiến độ sẽ được lưu tự động.')+unitSelector()+memoryModeBar()+`<div class="toolbar"><div class="chips">${[['unit','Chặng đang học'],['all','Toàn bộ'],['core','41 từ chính'],['extra','14 từ bổ sung'],['phrases','Cụm từ'],['review','Từ khó'],['new','Chưa thuộc']].map(([id,x])=>`<button class="chip ${U.cardFilter===id?'active':''}" data-cfilter="${id}">${e(x)}</button>`).join('')}</div><div style="margin-left:auto"><button class="btn small outline" data-act="shuffle">⇄ Trộn thẻ</button></div></div>
 <div class="study-layout"><section class="flash-panel">${!v?`<div class="empty">Bộ thẻ này chưa có từ. Chọn “Toàn bộ” hoặc đánh dấu từ cần ôn trong mục Từ vựng.</div>`:`<div class="deck-top"><span class="pill core">THẺ GHI NHỚ</span><span class="deck-progress">${U.cardIndex+1} / ${deck.length} · Trang ${pad(v.page)}</span></div><div class="progress-track" style="margin-bottom:18px"><div class="progress-bar" style="width:${(U.cardIndex+1)/deck.length*100}%"></div></div><button class="flash-surface" aria-label="Lật thẻ" data-act="flip">${!U.cardFlipped?`<span class="big-han han">${e(v.cn)}</span><span class="flip-hint">Nhấn vào thẻ để xem pinyin & nghĩa tiếng Việt ↻</span>`:`<span class="pill">ĐÁP ÁN TỪ NGUỒN</span><div class="big-han han">${e(v.cn)}</div><div class="back-py">${e(v.py)}</div><div class="back-vi">${e(v.vi)}</div><span class="flip-hint">Từ tài liệu · Trang ${pad(v.page)}</span>`}</button><div class="flash-actions"><button class="btn small outline" data-act="cardPrev" ${U.cardIndex===0?'disabled':''}>← Thẻ trước</button><div class="flash-main-actions"><button class="btn bad" data-vocab="${v.id}" data-status="review">↺ Chưa nhớ</button><button class="btn teal" data-vocab="${v.id}" data-status="known">✓ Đã thuộc</button><button class="btn outline" data-speak="${attr(v.cn)}" title="Giọng đọc do trình duyệt cung cấp">♫ Nghe</button></div><button class="btn small outline" data-act="cardNext" ${U.cardIndex>=deck.length-1?'disabled':''}>Thẻ sau →</button></div><div class="mini-note" style="margin-top:18px;text-align:center">${vstatus(v.id)==='known'?'Bạn đã đánh dấu thuộc thẻ này.':vstatus(v.id)==='review'?'Thẻ này nằm trong danh sách cần ôn lại.':'Chưa có đánh giá cho thẻ này.'}</div>`}</section>
 <aside><div class="info-card"><h3>Học như với giáo viên</h3><ol style="padding-left:18px"><li>Đọc chữ Hán và thử nhớ nghĩa.</li><li>Lật thẻ để xem pinyin, tiếng Việt.</li><li>Chọn “Chưa nhớ” hoặc “Đã thuộc” theo thực tế.</li><li>Quay lại bộ lọc “Từ khó” để ôn thêm.</li></ol><div class="side-mini"><div class="mini-note">TIẾN ĐỘ CỦA BẠN</div><b>${metaProgress().known} / ${D.vocab.length}</b><div class="progress-track" style="margin-top:10px"><div class="progress-bar teal" style="width:${metaProgress().known/D.vocab.length*100}%"></div></div></div><p>Âm thanh đọc sử dụng giọng tiếng Trung có sẵn trong trình duyệt, không phải bản thu của giáo viên. Nếu không có giọng phù hợp, xem pinyin để tự luyện.</p></div></aside></div>`}
 const grammarTopics=[
@@ -422,15 +452,16 @@ function quizCheck(reveal){const arr=quizList();const x=arr[U.quizIndex];if(!x)r
 async function importData(){const input=document.getElementById('progressFile');if(!input?.files?.length){message('Hãy chọn tệp JSON trước.');return}try{let raw=JSON.parse(await input.files[0].text());if(raw?.app!=='HSK4_BAI11'||!raw.progress||typeof raw.progress!=='object'||Array.isArray(raw.progress))throw Error('Không đúng tệp tiến độ HSK4 Bài 11.');
  const data=raw.progress;for(const k of ['vocab','quiz','translations','activity']){if(!data[k]||typeof data[k]!=='object'||Array.isArray(data[k]))throw Error('Tệp thiếu phần '+k)}
  if(!confirm('Nhập tệp này sẽ thay thế tiến độ đã lưu trên trình duyệt. Tiếp tục?'))return;
- P={...load(),vocab:data.vocab,quiz:data.quiz,translations:data.translations,activity:data.activity,memory:data.memory&&typeof data.memory==='object'?data.memory:{},grammar:data.grammar&&typeof data.grammar==='object'?data.grammar:{},studySessions:data.studySessions&&typeof data.studySessions==='object'?data.studySessions:{},studyHistory:data.studyHistory&&typeof data.studyHistory==='object'?data.studyHistory:{},studyView:data.studyView&&typeof data.studyView==='object'?data.studyView:{},preferences:data.preferences||{}};persist();U.importMessage='Đã nhập tiến độ.';message('Khôi phục tiến độ thành công.');render();}catch(err){message('Không thể nhập: '+err.message)}}
+ P={...load(),vocab:data.vocab,quiz:data.quiz,translations:data.translations,activity:data.activity,memory:data.memory&&typeof data.memory==='object'?data.memory:{},grammar:data.grammar&&typeof data.grammar==='object'?data.grammar:{},studySessions:data.studySessions&&typeof data.studySessions==='object'?data.studySessions:{},studyHistory:data.studyHistory&&typeof data.studyHistory==='object'?data.studyHistory:{},hzMemory:data.hzMemory&&typeof data.hzMemory==='object'?data.hzMemory:{},studyView:data.studyView&&typeof data.studyView==='object'?data.studyView:{},preferences:data.preferences||{}};persist();U.importMessage='Đã nhập tiến độ.';message('Khôi phục tiến độ thành công.');render();}catch(err){message('Không thể nhập: '+err.message)}}
 function exportData(){const payload=JSON.stringify({app:'HSK4_BAI11',version:1,exportedAt:new Date().toISOString(),progress:P},null,2);const blob=new Blob([payload],{type:'application/json'});const link=document.createElement('a');const url=URL.createObjectURL(blob);link.href=url;link.download='HSK4_Bai11_TienDo_'+today()+'.json';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);message('Đã tạo file xuất tiến độ.');}
 function shuffle(){const arr=cardDeck();const ids=arr.map(x=>x.id);for(let i=ids.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[ids[i],ids[j]]=[ids[j],ids[i]];}U.cardOrder=ids;U.cardShuffle=true;U.cardIndex=0;U.cardFlipped=false;render();message('Đã trộn thứ tự thẻ.');}
-const acts={soundToggle(){SFX.toggle();render()},nextUnit(){setUnit(Math.min(3,U.unit+1),false)},memoryRestart(){memoryPrepare();render()},memoryNext(){memoryNext()},mobile(){U.mobile=!U.mobile;render()},mobileClose(){U.mobile=false;render()},vocabPrev(){U.vocabPage=Math.max(0,U.vocabPage-1);render()},vocabNext(){U.vocabPage++;render()},shuffle,flip(){U.cardFlipped=!U.cardFlipped;render()},cardPrev(){advanceCards(-1)},cardNext(){advanceCards(1)},quizPrev(){advanceQuiz(-1)},quizNext(){advanceQuiz(1)},quizPy(){U.quizShowPy=!U.quizShowPy;render()},quizVi(){U.quizShowVi=!U.quizShowVi;render()},quizClear(){U.quizDraft='';U.quizResult=null;render()},quizReveal(){quizCheck(true)},quizCheck(){quizCheck(false)},readerPy(){U.readerPy=!U.readerPy;render()},readerVi(){U.readerVi=!U.readerVi;render()},readerAnswers(){U.readerAnswers=!U.readerAnswers;render()},pageRaw(){U.pageRaw=!U.pageRaw;render()},pagePy(){U.pagePy=!U.pagePy;render()},pageVi(){U.pageVi=!U.pageVi;render()},pagePrev(){gotoPage(U.page-1)},pageNext(){gotoPage(U.page+1)},gotoPage(){gotoPage(document.getElementById('gotoPage')?.value)},export:exportData,import:importData};
-document.addEventListener('click',ev=>{const hit=ev.target.closest('[data-act],[data-tab],[data-page],[data-vfilter],[data-vocab],[data-cfilter],[data-grammar],[data-qfilter],[data-qmode],[data-qsave],[data-speak],[data-mmode],[data-mfilter],[data-mchoice],[data-unit-learn],[data-unit-test],[data-gstate]');if(!hit)return;
+const acts={hzCheck(){hzCheck()},soundToggle(){SFX.toggle();render()},nextUnit(){setUnit(Math.min(3,U.unit+1),false)},memoryRestart(){memoryPrepare();render()},memoryNext(){memoryNext()},mobile(){U.mobile=!U.mobile;render()},mobileClose(){U.mobile=false;render()},vocabPrev(){U.vocabPage=Math.max(0,U.vocabPage-1);render()},vocabNext(){U.vocabPage++;render()},shuffle,flip(){U.cardFlipped=!U.cardFlipped;render()},cardPrev(){advanceCards(-1)},cardNext(){advanceCards(1)},quizPrev(){advanceQuiz(-1)},quizNext(){advanceQuiz(1)},quizPy(){U.quizShowPy=!U.quizShowPy;render()},quizVi(){U.quizShowVi=!U.quizShowVi;render()},quizClear(){U.quizDraft='';U.quizResult=null;render()},quizReveal(){quizCheck(true)},quizCheck(){quizCheck(false)},readerPy(){U.readerPy=!U.readerPy;render()},readerVi(){U.readerVi=!U.readerVi;render()},readerAnswers(){U.readerAnswers=!U.readerAnswers;render()},pageRaw(){U.pageRaw=!U.pageRaw;render()},pagePy(){U.pagePy=!U.pagePy;render()},pageVi(){U.pageVi=!U.pageVi;render()},pagePrev(){gotoPage(U.page-1)},pageNext(){gotoPage(U.page+1)},gotoPage(){gotoPage(document.getElementById('gotoPage')?.value)},export:exportData,import:importData};
+document.addEventListener('click',ev=>{const hit=ev.target.closest('[data-act],[data-tab],[data-page],[data-vfilter],[data-vocab],[data-cfilter],[data-grammar],[data-qfilter],[data-qmode],[data-qsave],[data-speak],[data-mmode],[data-mfilter],[data-mchoice],[data-unit-learn],[data-unit-test],[data-unit-hanzi],[data-gstate]');if(!hit)return;
  if(hit.dataset.unitLearn!==undefined){setUnit(Number(hit.dataset.unitLearn),false);return}
  if(hit.dataset.unitTest!==undefined){setUnit(Number(hit.dataset.unitTest),true);return}
+ if(hit.dataset.unitHanzi!==undefined){setUnit(Number(hit.dataset.unitHanzi),'hanzi');return}
  if(hit.dataset.gstate){gramSave(Number(hit.dataset.gidx),hit.dataset.gstate);return}
- if(hit.dataset.mmode){U.memoryMode=hit.dataset.mmode;if(U.memoryMode==='choice'&&!restoreMemorySession())memoryPrepare();render();return}
+ if(hit.dataset.mmode){U.memoryMode=hit.dataset.mmode;if((U.memoryMode==='choice'||U.memoryMode==='hanzi')&&!restoreMemorySession())memoryPrepare();render();return}
  if(hit.dataset.mfilter){U.mcqFilter=hit.dataset.mfilter;if(!restoreMemorySession())memoryPrepare();render();return}
  if(hit.dataset.mchoice){memoryChoose(hit.dataset.mchoice);return}
  if(hit.dataset.tab){switchTab(hit.dataset.tab);return}
@@ -445,9 +476,10 @@ document.addEventListener('click',ev=>{const hit=ev.target.closest('[data-act],[
  if(hit.dataset.speak){speak(hit.dataset.speak);return}
  if(hit.dataset.act&&acts[hit.dataset.act]){acts[hit.dataset.act]();return}
 });
-document.addEventListener('input',ev=>{if(ev.target.id==='searchVocab'){U.search=ev.target.value;U.vocabPage=0;const pane=document.getElementById('vocab-results');if(pane)pane.outerHTML=vocabList();}else if(ev.target.id==='quizDraft'){U.quizDraft=ev.target.value;saveStudyView();}});
+document.addEventListener('input',ev=>{if(ev.target.id==='searchVocab'){U.search=ev.target.value;U.vocabPage=0;const pane=document.getElementById('vocab-results');if(pane)pane.outerHTML=vocabList();}else if(ev.target.id==='quizDraft'){U.quizDraft=ev.target.value;saveStudyView();}else if(ev.target.id==='hzInput'){U.hzDraft=ev.target.value;saveMemorySession();}});
+document.addEventListener('submit',ev=>{if(ev.target?.id==='hzForm'){ev.preventDefault();hzCheck();}});
 document.addEventListener('change',ev=>{if(ev.target.id==='readerGroup'){U.readerGroup=ev.target.value;render()}});
-document.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&ev.target.id==='gotoPage'){gotoPage(ev.target.value);return}if(U.tab==='cards'&&!['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)){if(U.memoryMode==='choice'){if(/^[1-4]$/.test(ev.key)&&!U.mcqFinished){const id=U.mcqOrder[U.mcqIndex],v=D.vocab.find(x=>x.id===id);if(v){const options=memoryOptions(v),picked=options[Number(ev.key)-1];if(picked){ev.preventDefault();memoryChoose(picked.id)}}}else if(ev.key==='Enter'&&!U.mcqFinished&&U.mcqAnswered[U.mcqOrder[U.mcqIndex]]){ev.preventDefault();memoryNext()}}else{if(ev.key==='ArrowRight'){ev.preventDefault();advanceCards(1)}if(ev.key==='ArrowLeft'){ev.preventDefault();advanceCards(-1)}if(ev.key===' '){ev.preventDefault();U.cardFlipped=!U.cardFlipped;render()}}}});
+document.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&ev.target.id==='gotoPage'){gotoPage(ev.target.value);return}if(U.tab==='cards'&&!['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)){if(U.memoryMode==='choice'){if(/^[1-4]$/.test(ev.key)&&!U.mcqFinished){const id=U.mcqOrder[U.mcqIndex],v=D.vocab.find(x=>x.id===id);if(v){const options=memoryOptions(v),picked=options[Number(ev.key)-1];if(picked){ev.preventDefault();memoryChoose(picked.id)}}}else if(ev.key==='Enter'&&!U.mcqFinished&&U.mcqAnswered[U.mcqOrder[U.mcqIndex]]){ev.preventDefault();memoryNext()}}else if(U.memoryMode==='flashcard'){if(ev.key==='ArrowRight'){ev.preventDefault();advanceCards(1)}if(ev.key==='ArrowLeft'){ev.preventDefault();advanceCards(-1)}if(ev.key===' '){ev.preventDefault();U.cardFlipped=!U.cardFlipped;render()}}}});
 window.addEventListener('hashchange',()=>{const section=location.hash.replace('#','');if(mainSections.some(a=>a[0]===section)&&U.tab!==section){U.tab=section;render()}});
 let incoming=location.hash.replace('#','');if(mainSections.some(a=>a[0]===incoming))U.tab=incoming;
 render();

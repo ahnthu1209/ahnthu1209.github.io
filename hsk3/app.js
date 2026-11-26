@@ -54,12 +54,17 @@ let P=load();
 const rememberedView=lesson&&P.views[lesson.number]||{};
 const UI={tab:rememberedView.tab==='grammar'?'grammar':'vocab',
  stage:Number.isInteger(rememberedView.stage)&&rememberedView.stage>=0&&rememberedView.stage<4?rememberedView.stage:0,
- mode:['list','flash','quiz'].includes(rememberedView.mode)?rememberedView.mode:'list',
+ mode:['list','flash','quiz','type'].includes(rememberedView.mode)?rememberedView.mode:'list',
  cardIndex:Number.isInteger(rememberedView.cardIndex)&&rememberedView.cardIndex>=0?rememberedView.cardIndex:0,
- flipped:!!rememberedView.flipped,search:'',quiz:null};
+ flipped:!!rememberedView.flipped,search:'',quiz:null,typing:null};
 function quizKey(l=lesson,stage=UI.stage){return l.number+':'+stage;}
 function resumeQuiz(l=lesson){const q=P.quizSessions[quizKey(l)];return q&&Array.isArray(q.items)&&q.items.length&&Number.isInteger(q.index)&&q.index>=0&&q.index<q.items.length&&typeof q.correct==='number'?q:null;}
 if(lesson)UI.quiz=resumeQuiz(lesson);
+// Restore a Vietnamese-to-Hanzi typing session independently from the old multiple-choice quiz.
+function typingKey(l=lesson,stage=UI.stage){return l.number+':'+stage;}
+function typingWords(l,stage){return stageWords(l,stage).filter(w=>/^[\p{Script=Han}]+$/u.test(w.han));}
+function restoreTyping(l=lesson){const q=P.typingSessions[typingKey(l)];return q&&Array.isArray(q.ids)&&q.ids.length&&q.ids.every(id=>l.words.some(w=>w.id===id))&&q.index>=0&&q.index<q.ids.length?q:null;}
+if(lesson)UI.typing=restoreTyping(lesson);
 function lastRound(l,stage){return P.quizHistory[l.number+':'+stage]||null;}
 function roundLabel(l,stage){
  const h=lastRound(l,stage),q=P.quizSessions[l.number+':'+stage];
@@ -71,11 +76,12 @@ function storeStudyState(){
  if(!lesson)return;
  P.views[lesson.number]={tab:UI.tab,stage:UI.stage,mode:UI.mode,cardIndex:UI.cardIndex,flipped:UI.flipped};
  if(UI.quiz&&Array.isArray(UI.quiz.items))P.quizSessions[quizKey()]={...UI.quiz};
+ if(UI.typing&&Array.isArray(UI.typing.ids))P.typingSessions[typingKey()]={...UI.typing};
  save();
 }
 
 const bee={happy:'/hsk4/assets/bee-happy-original.webp',wink:'/hsk4/assets/bee-wink.png',thinking:'/hsk4/assets/bee-thinking.png',serious:'/hsk4/assets/bee-serious.png',sad:'/hsk4/assets/bee-sad.png',surprised:'/hsk4/assets/bee-surprised.png'};
-function load(){try{const r=JSON.parse(localStorage.getItem(STORE)||'{}');return {memory:r.memory||{},self:r.self||{},grammar:r.grammar||{},quizSessions:r.quizSessions||{},quizHistory:r.quizHistory||{},views:r.views||{}};}catch(_){return {memory:{},self:{},grammar:{},quizSessions:{},quizHistory:{},views:{}};}}
+function load(){try{const r=JSON.parse(localStorage.getItem(STORE)||'{}');return {memory:r.memory||{},self:r.self||{},grammar:r.grammar||{},quizSessions:r.quizSessions||{},quizHistory:r.quizHistory||{},typingSessions:r.typingSessions||{},typingHistory:r.typingHistory||{},typedMemory:r.typedMemory||{},views:r.views||{}};}catch(_){return {memory:{},self:{},grammar:{},quizSessions:{},quizHistory:{},typingSessions:{},typingHistory:{},typedMemory:{},views:{}};}}
 function save(){try{localStorage.setItem(STORE,JSON.stringify(P));}catch(_){}}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function norm(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/đ/g,'d').replace(/[^a-z0-9\u3400-\u9fff]+/g,' ').trim();}
@@ -94,15 +100,72 @@ function hub(){
  return header()+`<main class="site-wrap"><section class="hero"><div><div class="eyebrow">HSK3 · ÔN TẬP 1 · TÀI LIỆU 46 TRANG</div><h1>Ôn từ mới.<br>Hiểu ngữ pháp.<br><em>Vững từng bài.</em></h1><p>Chia riêng 10 bài học, giữ trọn các mục từ từ bảng gốc và ví dụ ngữ pháp có chữ Hán, pinyin, tiếng Việt. Không đưa bài tập dịch vào website.</p><div class="hero-actions"><a class="btn primary" href="#lessons">Chọn bài để học ↗</a><a class="btn light" href="/hsk4/">Chuyển sang HSK4 →</a></div><div class="hero-pills"><span>Chữ Hán · Pinyin · Nghĩa Việt</span><span>4 chặng mỗi bài</span><span>Tiến độ độc lập</span></div></div><div class="hero-art"><div class="hero-arch"><img src="${bee.happy}" width="340" height="438" alt="Mascot ong vui vẻ" loading="eager"></div></div></section><section class="stats" aria-label="Thống kê nguồn"><div class="stat"><strong>10</strong><small>Bài ôn tập độc lập</small></div><div class="stat"><strong>374</strong><small>Mục từ trong bảng nguồn</small></div><div class="stat"><strong>13</strong><small>Trang / chủ điểm ngữ pháp</small></div><div class="stat"><strong>46</strong><small>Trang PDF đã đối chiếu</small></div></section><section id="lessons"><div class="section-intro"><div><div class="eyebrow">CHỌN BÀI HỌC</div><h2>Ôn tập theo từng bài</h2><p>Vào từng bài để học từ mới theo 4 chặng và xem toàn bộ ngữ pháp trong PDF.</p></div><span class="tag blue">10 BÀI · HỌC RIÊNG BIỆT</span></div><div class="lesson-grid">${lessonCards}</div></section><div class="verify-note"><strong>Cam kết nguồn:</strong> 374 ô từ vựng có nội dung từ 10 bảng PDF, tương ứng 370 mặt chữ Hán khác nhau. Các từ lặp <strong>还 · 过去 · 落 · 着</strong> được giữ ở cả hai bài có xuất hiện; không xóa nghĩa khác nhau. Đây là bộ “Ôn tập 1” theo tài liệu bạn cung cấp, <strong>không tuyên bố là toàn bộ danh mục HSK3 chính thức</strong>. Từ <strong>新浪</strong> ở Bài 10 được giữ theo nguồn và gắn cảnh báo vì chú thích nghi có lỗi.</div><details><summary style="color:var(--blue);font-weight:850;cursor:pointer;margin-bottom:12px">Xem bảng kiểm tra đủ từ theo từng bài</summary><div class="table-scroll"><table class="audit-table"><thead><tr><th>Bài</th><th>Trang từ</th><th>Ô bảng</th><th>Số mục</th><th>Ngữ pháp</th><th>Kiểm tra</th></tr></thead><tbody>${auditRows}</tbody><tfoot><tr><th>Tổng</th><th>10 trang</th><th>Không bỏ ô có nội dung</th><th>374</th><th>13</th><th>Đạt</th></tr></tfoot></table></div></details></main>`+footer();
 }
 function lessonHeader(l){const w=wordStats(l.words),g=grammarStats(l);return header()+`<main class="site-wrap"><nav class="lesson-nav" aria-label="10 bài HSK3"><a href="/hsk3/">⌂ Tất cả bài</a>${D.lessons.map(x=>`<a href="/hsk3/bai-${x.number}/" class="${x.number===l.number?'active':''}">Bài ${x.number}</a>`).join('')}</nav><section class="intro"><div><div class="eyebrow">HSK3 · ÔN TẬP 1 · BÀI ${pad(l.number)}</div><h1>Từ mới & ngữ pháp</h1><p>${l.words.length} mục từ trang ${pad(l.vocabPage)} · ${l.grammar.length} chủ điểm ngữ pháp ở trang ${l.grammar.map(x=>pad(x.page)).join(', ')} · Đúng thứ tự PDF gốc.</p></div><img src="${bee.happy}" width="110" height="125" alt="Ong chào mừng"></section><div class="lesson-progress">${meter('字 · Từ vựng đã kiểm tra đúng',w.verified,w.total,false,`${w.verified}/${w.total} từ có lần chọn nghĩa gần nhất đúng. Tự đánh dấu thuộc: ${w.marked}.`)}${meter('文 · Ngữ pháp đã hiểu',g.verified,g.total,true,`${g.verified}/${g.total} chủ điểm bạn tự xác nhận hiểu; chưa phải điểm kiểm tra.`)}</div><div class="top-tabs" role="tablist" aria-label="Chọn loại nội dung"><button role="tab" aria-selected="${UI.tab==='vocab'}" class="${UI.tab==='vocab'?'active':''}" data-action="tab" data-value="vocab">字 · Từ mới (${l.words.length})</button><button role="tab" aria-selected="${UI.tab==='grammar'}" class="${UI.tab==='grammar'?'active':''}" data-action="tab" data-value="grammar">文 · Ngữ pháp (${l.grammar.length})</button></div><div id="lessoncontent">${UI.tab==='vocab'?vocabPanel(l):grammarPanel(l)}</div><div class="verify-note"><strong>Ghi chú kiểm soát:</strong> chỉ dùng bảng từ và trang ngữ pháp của “Ôn tập 1”. Những trang bài tập dịch không được đưa vào phần học. Từ có nhiều cách đọc hoặc nghĩa trong các bài khác nhau được lưu theo từng ô nguồn; không tự hợp nhất.</div></main>`+footer();}
-function modes(){return `<div class="chips"><button class="chip ${UI.mode==='list'?'active':''}" data-action="mode" data-value="list">▦ Danh sách từ</button><button class="chip ${UI.mode==='flash'?'active':''}" data-action="mode" data-value="flash">▣ Flashcard</button><button class="chip ${UI.mode==='quiz'?'active':''}" data-action="mode" data-value="quiz">◫ 4 ô chọn nghĩa</button></div>`;}
-function vocabPanel(l){const words=stageWords(l,UI.stage),st=wordStats(words);let stages='<div class="stage-header"><h2>Học theo 4 chặng</h2><p>Ngắn gọn · Không lẫn bài · Bao phủ đủ '+l.words.length+' mục</p></div><div class="stages">';for(let i=0;i<4;i++){let part=stageWords(l,i),s=wordStats(part);stages+=`<div class="stage ${UI.stage===i?'active':''}"><strong>CHẶNG ${i+1}</strong><small>${part.length} từ · ${s.verified}/${part.length} từ đúng</small><span class="stage-saved">${esc(roundLabel(l,i))}</span><div class="progress-track"><div class="progress-fill" style="width:${s.pct}%"></div></div><div class="stage-per">${s.pct}% ghi nhớ đã kiểm tra</div><div class="stage-actions"><button data-action="stage-flash" data-value="${i}">Học thẻ</button><button data-action="stage-quiz" data-value="${i}">Kiểm tra</button></div></div>`;}stages+='</div>';
+function modes(){return `<div class="chips"><button class="chip ${UI.mode==='list'?'active':''}" data-action="mode" data-value="list">▦ Danh sách từ</button><button class="chip ${UI.mode==='flash'?'active':''}" data-action="mode" data-value="flash">▣ Flashcard</button><button class="chip ${UI.mode==='quiz'?'active':''}" data-action="mode" data-value="quiz">◫ 4 ô chọn nghĩa</button><button class="chip ${UI.mode==='type'?'active':''}" data-action="mode" data-value="type">✍ Gõ chữ Hán</button></div>`;}
+function vocabPanel(l){const words=stageWords(l,UI.stage),st=wordStats(words);let stages='<div class="stage-header"><h2>Học theo 4 chặng</h2><p>Ngắn gọn · Không lẫn bài · Bao phủ đủ '+l.words.length+' mục</p></div><div class="stages">';for(let i=0;i<4;i++){let part=stageWords(l,i),s=wordStats(part);stages+=`<div class="stage ${UI.stage===i?'active':''}"><strong>CHẶNG ${i+1}</strong><small>${part.length} từ · ${s.verified}/${part.length} từ đúng</small><span class="stage-saved">${esc(roundLabel(l,i))}</span><div class="progress-track"><div class="progress-fill" style="width:${s.pct}%"></div></div><div class="stage-per">${s.pct}% ghi nhớ đã kiểm tra</div><div class="stage-actions"><button data-action="stage-flash" data-value="${i}">Học thẻ</button><button data-action="stage-quiz" data-value="${i}">Kiểm tra</button><button class="type-action" data-action="stage-type" data-value="${i}">✍ Gõ chữ Hán</button></div><div class="stage-type-status">${esc(typingLabel(l,i))}</div></div>`;}stages+='</div>';
  const controls=`<div class="view-controls">${modes()}${UI.mode==='list'?'<input id="wordsearch" class="word-search" type="search" placeholder="Tìm chữ Hán, pinyin, nghĩa Việt" aria-label="Tìm trong danh sách từ">':'<span class="tag blue">Từ vựng từ trang '+pad(l.vocabPage)+'</span>'}</div>`;
- const content=UI.mode==='list'?vocabList(l,words):UI.mode==='flash'?flashPanel(l,words):quizPanel(l,words);
+ const content=UI.mode==='list'?vocabList(l,words):UI.mode==='flash'?flashPanel(l,words):UI.mode==='type'?typingPanel(l,words):quizPanel(l,words);
  return `<section><div class="lesson-section-head"><div><h2>Từ vựng Bài ${l.number}</h2><p>${l.words.length} ô nguồn từ trang ${pad(l.vocabPage)}, giữ đúng thứ tự từng hàng và cột.</p></div><img src="${bee.wink}" width="75" height="75" alt="Ong giơ ngón cái"></div>${stages}<div class="flat-note">Bạn đang học <strong>Chặng ${UI.stage+1}</strong>: ${words.length} mục. Đã kiểm tra đúng ${st.verified}/${st.total} từ. Chọn chặng khác hoặc nhấn vào Flashcard / kiểm tra để học đúng nhóm từ.</div>${controls}${content}</section>`;
 }
 function issueFor(l,w){return D.sourceIssues.find(x=>x.lesson===l.number&&x.word===w.han)||null;}
 function vocabList(l,words){return `<div class="word-grid" id="wordgrid">${words.map(w=>{const issue=issueFor(l,w),self=P.self[w.id],verified=wordCorrect(w);return `<article class="word-card" data-wordsearch="${esc(norm(w.han+' '+w.pinyin+' '+w.vi))}"><div class="cn">${esc(w.han)}</div><div class="py">${esc(w.pinyin)}</div><div class="vi">${esc(w.vi)}</div><span class="source">Trang ${pad(w.page)} · hàng ${w.row}, cột ${w.col} ${verified?'· ✓ Trắc nghiệm đúng':''}</span>${issue&&issue.status.includes('cần')?`<div class="source-warning"><b>Cần đối chiếu:</b> ${esc(issue.note)}</div>`:''}<div class="word-actions"><button data-action="word-self" data-id="${w.id}" data-value="known" class="${self==='known'?'active':''}">✓ Đã nhớ</button><button data-action="word-self" data-id="${w.id}" data-value="review" class="review ${self==='review'?'active':''}">↺ Từ khó</button></div></article>`;}).join('')}</div><p class="flat-note">Có <b>${words.length}</b> mục trong chặng, tìm kiếm chỉ lọc hiển thị. Đánh dấu “Đã nhớ” là <b>tự đánh giá</b>; tỷ lệ ghi nhớ kiểm tra chỉ tăng khi chọn đúng nghĩa trong phần 4 ô.</p>`;}
 function flashPanel(l,words){if(!words.length)return '<div class="empty">Chặng này chưa có từ.</div>';UI.cardIndex=Math.max(0,Math.min(UI.cardIndex,words.length-1));const w=words[UI.cardIndex];const issue=issueFor(l,w);return `<div class="flashwrap"><div class="flashcount">THẺ ${UI.cardIndex+1}/${words.length} · TRANG ${pad(w.page)} · HÀNG ${w.row} CỘT ${w.col}</div><button class="flash-card" data-action="flip" style="width:100%" aria-label="Lật thẻ flashcard"><div class="hint">${UI.flipped?'ĐÃ LẬT · NHẤN ĐỂ XEM LẠI CHỮ HÁN':'NHỚ NGHĨA RỒI MỚI LẬT'}</div>${UI.flipped?`<div class="big-cn">${esc(w.han)}</div><div class="face-py">${esc(w.pinyin)}</div><div class="face-vi">${esc(w.vi)}</div>`:`<div class="big-cn">${esc(w.han)}</div><div class="hint">Nhấn vào thẻ để xem pinyin và nghĩa</div>`}</button>${issue&&issue.status.includes('cần')?`<div class="source-warning">${esc(issue.note)}</div>`:''}<div class="flash-tools"><button class="btn light" data-action="card-prev">← Thẻ trước</button><button class="btn blue" data-action="flip">${UI.flipped?'Úp thẻ lại':'Lật xem nghĩa'}</button><button class="btn light" data-action="card-next">Thẻ tiếp →</button></div><div class="flash-tools"><button class="btn soft" data-action="word-self" data-id="${w.id}" data-value="review">↺ Chưa thuộc</button><button class="btn primary" data-action="word-self" data-id="${w.id}" data-value="known">✓ Đã nhớ</button></div><div class="flat-note">Flashcard chỉ giúp tự ôn. Sau khi học hết chặng, chọn <b>4 ô chọn nghĩa</b> để tự kiểm tra và tăng tỷ lệ từ vựng đã xác minh.</div></div>`;}
+
+// Type only complete source words. Dotted grammatical templates stay in the source lists, never auto-graded.
+function typeNorm(value){return String(value||'').normalize('NFKC').replace(/[\s\u3000，,。.!?？！、;；:：“”"'‘’（）()【】\[\]{}〈〉《》·]/g,'');}
+function typingLabel(l,stage){
+ const h=P.typingHistory[typingKey(l,stage)],q=P.typingSessions[typingKey(l,stage)];
+ if(h)return 'Gõ Hán tự: lượt gần nhất '+h.correct+'/'+h.total+' đúng'+(q&&!q.done?' · đang làm '+(q.index+(q.answered!==null?1:0))+'/'+q.ids.length:'');
+ if(q&&!q.done)return 'Gõ Hán tự: đang làm '+(q.index+(q.answered!==null?1:0))+'/'+q.ids.length;
+ return 'Chưa kiểm tra gõ chữ Hán';
+}
+function startTyping(l){
+ const bank=typingWords(l,UI.stage);
+ const remaining=shuffle(bank.filter(w=>P.typedMemory[w.id]?.lastCorrect!==true));
+ const known=shuffle(bank.filter(w=>P.typedMemory[w.id]?.lastCorrect===true));
+ UI.typing={ids:[...remaining,...known].slice(0,10).map(w=>w.id),index:0,answered:null,correct:0,done:false,draft:''};
+ UI.mode='type';render();
+}
+function typingCheck(){
+ const q=UI.typing;if(!q||q.done||q.answered!==null)return;
+ const w=lesson.words.find(x=>x.id===q.ids[q.index]);
+ const typed=String(document.getElementById('hanziInput')?.value??q.draft??'').trim();
+ const cleaned=typeNorm(typed);
+ if(!cleaned){const alert=document.getElementById('hanziNotice');if(alert)alert.textContent='Bạn cần nhập chữ Hán trước khi kiểm tra.';return;}
+ if(!/^[\p{Script=Han}]+$/u.test(cleaned)){const alert=document.getElementById('hanziNotice');if(alert)alert.textContent='Vui lòng nhập chữ Hán, không dùng pinyin hay tiếng Việt.';return;}
+ const good=cleaned===typeNorm(w.han);
+ q.draft=typed;q.answered={typed,correct:good};q.correct+=good?1:0;SFX.play(good?'correct':'wrong');
+ const prior=P.typedMemory[w.id]||{};
+ P.typedMemory[w.id]={attempts:(prior.attempts||0)+1,correct:(prior.correct||0)+(good?1:0),lastCorrect:good,lastAt:new Date().toISOString()};
+ if(!good)P.self[w.id]='review';
+ render();
+}
+function typingNext(){
+ const q=UI.typing;if(!q||q.answered===null||q.done)return;
+ if(q.index===q.ids.length-1){
+  q.done=true;
+  const k=typingKey(),old=P.typingHistory[k]||{};
+  P.typingHistory[k]={correct:q.correct,total:q.ids.length,best:Math.max(q.correct,old.best||0),rounds:(old.rounds||0)+1,completedAt:new Date().toISOString()};
+ }else{q.index++;q.draft='';q.answered=null;}
+ render();
+}
+function typingPanel(l,words){
+ const q=UI.typing,eligible=typingWords(l,UI.stage),excluded=words.length-eligible.length;
+ const note='<p class="type-note">Chỉ nhập <b>chữ Hán</b>, không dùng pinyin. Chỉ chấm sau khi bạn bấm Kiểm tra. Đáp án trích nguyên bảng từ tài liệu (bỏ khoảng trắng/dấu câu khi so).</p>'
+ +(excluded?'<div class="typing-warning">'+excluded+' mẫu cấu trúc có dấu chỗ trống vẫn ở danh sách từ nhưng không chấm gõ, vì không phải một từ hoàn chỉnh.</div>':'');
+ if(!q)return '<div class="quiz-end"><img src="'+bee.thinking+'" width="95" height="95" alt="Ong suy nghĩ"><h3>Nhìn nghĩa Việt – Gõ chữ Hán</h3><p>Không có 4 ô đáp án: bạn phải tự nhập từ bằng bàn phím tiếng Trung.</p><button class="btn primary" data-action="type-start">Bắt đầu gõ 10 từ →</button>'+note+'</div>';
+ if(q.done)return '<div class="quiz-end"><img src="'+bee.happy+'" width="100" height="100" alt="Ong chúc mừng"><div class="score">'+q.correct+'/'+q.ids.length+'</div><h3>Hoàn thành bài gõ chữ Hán · Đã lưu kết quả</h3><p>Điểm gõ từ chặng '+(UI.stage+1)+' vẫn được giữ khi thoát và mở lại trang.</p><button class="btn primary" data-action="type-start">Luyện 10 từ tiếp ↗</button>'+note+'</div>';
+ const w=l.words.find(x=>x.id===q.ids[q.index]),a=q.answered,prior=P.typedMemory[w.id];
+ return '<div class="type-card"><div class="type-prompt"><div class="hint">TIẾNG VIỆT · CÂU '+(q.index+1)+' / '+q.ids.length+'</div>'
+ +'<div class="type-vietnamese">'+esc(w.vi)+'</div><div class="type-info">Bài '+l.number+' · Trang '+pad(w.page)+' · '+[...w.han].length+' chữ Hán · Đúng '+q.correct+'/'+q.ids.length+'</div></div>'
+ +'<div class="type-body"><form class="type-form" id="hanziForm"><label for="hanziInput">Nhập từ tiếng Trung tương ứng</label>'
+ +'<input class="type-input" id="hanziInput" name="hanzi" lang="zh-CN" type="text" spellcheck="false" autocapitalize="off" autocomplete="off" enterkeyhint="done" placeholder="Nhập chữ Hán..." value="'+esc(q.draft||'')+'" '+(a?'disabled':'required')+'>'
+ +(!a?'<button class="btn primary type-submit" type="submit">✓ Kiểm tra chữ Hán</button>':'')
+ +'</form><div id="hanziNotice" class="type-note" role="alert" aria-live="polite"></div>'
+ +(a?'<div class="type-feedback '+(a.correct?'':'wrong')+'" role="status"><img src="'+(a.correct?bee.wink:bee.sad)+'" alt="Ong phản hồi"><strong>'+(a.correct?'✓ Chính xác, bạn đã tự gõ đúng!':'↺ Chưa đúng · cần ôn lại')+'</strong><br>Đã nhập: <b>'+esc(a.typed)+'</b><br>Đáp án nguồn: <b>'+esc(w.han)+'</b> · '+esc(w.pinyin)+'<br>'+esc(w.vi)+'<br><span class="source">PDF trang '+pad(w.page)+', hàng '+w.row+', cột '+w.col+'.</span></div>':'')
+ +'<div class="type-footer"><span class="type-note">'+(a?'Đã chấm câu này; chuyển câu tiếp theo.':'Dùng bàn phím tiếng Trung, nhấn Enter để chấm.')+'</span><button class="btn primary" data-action="type-next" '+(a?'':'disabled')+'>'+(q.index===q.ids.length-1?'Xem điểm →':'Câu tiếp →')+'</button></div>'
+ +'</div></div>'+note;
+}
+
 function shuffle(items){let a=items.slice();for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function distinctMeanings(a,b){let x=norm(a),y=norm(b);if(!x||!y)return false;if(x===y||x.includes(y)||y.includes(x))return false;return true;}
 function optionsFor(w,l){let pool=shuffle(l.words.filter(x=>x.id!==w.id&&x.vi&&distinctMeanings(x.vi,w.vi)));let vals=[w];for(const x of pool){if(vals.length===4)break;if(vals.every(y=>distinctMeanings(y.vi,x.vi)))vals.push(x);}if(vals.length<4){for(const x of shuffle(D.lessons.flatMap(z=>z.words))){if(vals.length===4)break;if(vals.every(y=>distinctMeanings(y.vi,x.vi)))vals.push(x);}}return shuffle(vals.map(x=>({id:x.id,vi:x.vi})));}
@@ -118,11 +181,13 @@ document.addEventListener('click',ev=>{
  const b=ev.target.closest('[data-action]');if(!b)return;if(b.dataset.action==='sound-toggle'){SFX.toggle();render();return;}if(!lesson)return;
  const a=b.dataset.action,v=b.dataset.value,id=b.dataset.id;
  if(a==='tab'){UI.tab=v;UI.search='';render();return;}
- if(a==='mode'){UI.mode=v;UI.search='';UI.cardIndex=0;UI.flipped=false;if(v==='quiz'){UI.quiz=resumeQuiz(lesson);if(!UI.quiz){startQuiz(lesson);return;}}render();return;}
- if(a==='stage-flash'||a==='stage-quiz'){UI.stage=Number(v);UI.mode=a==='stage-flash'?'flash':'quiz';UI.cardIndex=0;UI.flipped=false;UI.quiz=resumeQuiz(lesson);if(a==='stage-quiz'&&!UI.quiz){startQuiz(lesson);return;}render();return;}
+ if(a==='mode'){UI.mode=v;UI.search='';UI.cardIndex=0;UI.flipped=false;if(v==='quiz'){UI.quiz=resumeQuiz(lesson);if(!UI.quiz){startQuiz(lesson);return;}}if(v==='type'){UI.typing=restoreTyping(lesson);if(!UI.typing){startTyping(lesson);return;}}render();return;}
+ if(a==='stage-flash'||a==='stage-quiz'||a==='stage-type'){UI.stage=Number(v);UI.mode=a==='stage-flash'?'flash':a==='stage-type'?'type':'quiz';UI.cardIndex=0;UI.flipped=false;UI.quiz=resumeQuiz(lesson);UI.typing=restoreTyping(lesson);if(a==='stage-quiz'&&!UI.quiz){startQuiz(lesson);return;}if(a==='stage-type'&&!UI.typing){startTyping(lesson);return;}render();return;}
  if(a==='word-self'){P.self[id]=P.self[id]===v?'':v;save();render();return;}
  if(a==='flip'){UI.flipped=!UI.flipped;render();return;}
  if(a==='card-prev'||a==='card-next'){const words=stageWords(lesson,UI.stage);UI.cardIndex=(UI.cardIndex+(a==='card-next'?1:-1)+words.length)%words.length;UI.flipped=false;render();return;}
+ if(a==='type-start'){startTyping(lesson);return;}
+ if(a==='type-next'){typingNext();return;}
  if(a==='quiz-start'){startQuiz(lesson);return;}
  if(a==='quiz-answer'){
   const q=UI.quiz;if(!q||q.done||q.picked!==null)return;const question=q.items[q.index];if(!question.options.some(opt=>opt.id===id))return;q.picked=id;
@@ -133,7 +198,8 @@ document.addEventListener('click',ev=>{
  if(a==='quiz-next'){const q=UI.quiz;if(!q||q.picked===null)return;if(q.index>=q.items.length-1){if(!q.done){q.done=true;const key=quizKey();const old=P.quizHistory[key]||{};P.quizHistory[key]={correct:q.correct,total:q.items.length,best:Math.max(q.correct,old.best||0),rounds:(old.rounds||0)+1,completedAt:new Date().toISOString()};}}else{q.index++;q.picked=null;}render();return;}
  if(a==='gram-state'){P.grammar[id]=P.grammar[id]===v?'':v;save();render();return;}
 });
-document.addEventListener('input',ev=>{if(ev.target.id!=='wordsearch')return;const search=norm(ev.target.value);for(const card of document.querySelectorAll('#wordgrid .word-card'))card.hidden=!!search&&!card.dataset.wordsearch.includes(search);});
+document.addEventListener('input',ev=>{if(ev.target.id==='hanziInput'){if(UI.typing&&!UI.typing.answered){UI.typing.draft=ev.target.value;storeStudyState();}return;}if(ev.target.id!=='wordsearch')return;const search=norm(ev.target.value);for(const card of document.querySelectorAll('#wordgrid .word-card'))card.hidden=!!search&&!card.dataset.wordsearch.includes(search);});
+document.addEventListener('submit',ev=>{if(ev.target?.id==='hanziForm'){ev.preventDefault();typingCheck();}});
 document.addEventListener('keydown',ev=>{if(!lesson)return;if(['INPUT','TEXTAREA'].includes(document.activeElement?.tagName))return;if(UI.tab==='vocab'&&UI.mode==='flash'){if(ev.key==='ArrowRight'){ev.preventDefault();const w=stageWords(lesson,UI.stage);UI.cardIndex=(UI.cardIndex+1)%w.length;UI.flipped=false;render();}if(ev.key==='ArrowLeft'){ev.preventDefault();const w=stageWords(lesson,UI.stage);UI.cardIndex=(UI.cardIndex+w.length-1)%w.length;UI.flipped=false;render();}if(ev.key===' '){ev.preventDefault();UI.flipped=!UI.flipped;render();}}else if(UI.tab==='vocab'&&UI.mode==='quiz'&&UI.quiz&&!UI.quiz.done){const q=UI.quiz;if(/^[1-4]$/.test(ev.key)&&q.picked===null){const option=q.items[q.index].options[Number(ev.key)-1];if(option){ev.preventDefault();document.querySelector(`[data-action="quiz-answer"][data-id="${option.id}"]`)?.click();}}if(ev.key==='Enter'&&q.picked!==null){ev.preventDefault();document.querySelector('[data-action="quiz-next"]')?.click();}}});
 render();
 })();
