@@ -23,7 +23,7 @@ const SFX=(()=>{
     osc.type=type;osc.frequency.setValueAtTime(freq,at);
     if(endFreq)osc.frequency.exponentialRampToValueAtTime(endFreq,at+duration*.85);
     gain.gain.setValueAtTime(.0001,at);
-    gain.gain.exponentialRampToValueAtTime(volume,at+.018);
+    gain.gain.exponentialRampToValueAtTime(Math.min(0.17,volume*3),at+.018);
     gain.gain.exponentialRampToValueAtTime(.0001,at+duration);
     osc.connect(gain);gain.connect(ctx.destination);
     osc.start(at);osc.stop(at+duration+.03);
